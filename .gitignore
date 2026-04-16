@@ -37,3 +37,6 @@ npm-debug.log
 
 
 .s.PGSQL.5432.lock
+.postgres/*
+
+code_duels_better_one_later/

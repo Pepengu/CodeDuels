@@ -5,31 +5,11 @@ defmodule CodeDuelsWeb.Layouts do
   """
   use CodeDuelsWeb, :html
 
-  # Embed all files in layouts/* within this module.
-  # The default root.html.heex file contains the HTML
-  # skeleton of your application, namely HTML headers
-  # and other static content.
   embed_templates "layouts/*"
 
-  @doc """
-  Renders your app layout.
-
-  This function is typically invoked from every template,
-  and it often contains your application menu, sidebar,
-  or similar.
-
-  ## Examples
-
-      <Layouts.app flash={@flash}>
-        <h1>Content</h1>
-      </Layouts.app>
-
-  """
   attr :flash, :map, required: true, doc: "the map of flash messages"
-
-  attr :current_scope, :map,
-    default: nil,
-    doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
+  attr :current_user, :map, default: nil, doc: "the current logged in user"
+  attr :locale, :string, default: "en"
 
   slot :inner_block, required: true
 
@@ -41,20 +21,24 @@ defmodule CodeDuelsWeb.Layouts do
       </div>
       <div class="navbar-center hidden lg:flex">
         <ul class="menu menu-horizontal px-1">
-          <li><a class="text-base-content/80 hover:text-primary" href="/tournaments">Tournaments</a></li>
-          <li><a class="text-base-content/80 hover:text-primary" href="/leaderboard">Leaderboard</a></li>
+          <li>
+            <a class="text-base-content/80 hover:text-primary" href="/tournaments">Tournaments</a>
+          </li>
+          <li>
+            <a class="text-base-content/80 hover:text-primary" href="/leaderboard">Leaderboard</a>
+          </li>
           <li><a class="text-base-content/80 hover:text-primary" href="/about">How it works</a></li>
         </ul>
       </div>
       <div class="navbar-end gap-2">
-        <%= if @current_scope do %>
-            <a class="btn btn-ghost" href={"/users/profile"}>{@current_scope.user.email}</a>
-            <a class="btn btn-primary" href={"/users/settings"}>Settings</a>
-            <.link href={~p"/users/log-out"} method={:delete} class="btn btn-primary">Log out</.link>
+        <%= if @current_user do %>
+          <a class="btn btn-primary" href="/profile">{@current_user.username}</a>
+          <a class="btn btn-primary" href="/logout">Log Out</a>
         <% else %>
-            <a class="btn btn-primary" href="/users/log-in">Login</a>
-            <a class="btn btn-primary" href="/users/register">Sign Up</a>
+          <a class="btn btn-primary" href="/login">Login</a>
+          <a class="btn btn-primary" href="/register">Sign Up</a>
         <% end %>
+        <.locale_toggle locale={@locale} />
         <.theme_toggle />
       </div>
     </div>
@@ -65,13 +49,6 @@ defmodule CodeDuelsWeb.Layouts do
     """
   end
 
-  @doc """
-  Shows the flash group with standard titles and content.
-
-  ## Examples
-
-      <.flash_group flash={@flash} />
-  """
   attr :flash, :map, required: true, doc: "the map of flash messages"
   attr :id, :string, default: "flash-group", doc: "the optional id of flash container"
 
@@ -108,11 +85,6 @@ defmodule CodeDuelsWeb.Layouts do
     """
   end
 
-  @doc """
-  Provides dark vs light theme toggle based on themes defined in app.css.
-
-  See <head> in root.html.heex which applies the theme before page load.
-  """
   def theme_toggle(assigns) do
     ~H"""
     <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
@@ -133,6 +105,19 @@ defmodule CodeDuelsWeb.Layouts do
       >
         <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>
+    </div>
+    """
+  end
+
+  def locale_toggle(assigns) do
+    ~H"""
+    <div class="flex gap-1">
+      <.link navigate={~p"/?locale=en"} class="btn btn-ghost btn-sm">
+        EN
+      </.link>
+      <.link navigate={~p"/?locale=ru"} class="btn btn-ghost btn-sm">
+        RU
+      </.link>
     </div>
     """
   end

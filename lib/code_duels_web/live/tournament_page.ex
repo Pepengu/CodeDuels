@@ -1,7 +1,6 @@
 defmodule CodeDuelsWeb.TournamentPageLive do
   use CodeDuelsWeb, :live_view
 
-
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash}>

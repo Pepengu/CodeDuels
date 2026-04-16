@@ -1,8 +1,6 @@
 defmodule CodeDuelsWeb.Router do
   use CodeDuelsWeb, :router
 
-  import CodeDuelsWeb.UserAuth
-
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -10,7 +8,7 @@ defmodule CodeDuelsWeb.Router do
     plug :put_root_layout, html: {CodeDuelsWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-    plug :fetch_current_scope_for_user
+    plug CodeDuelsWeb.Plugs.Auth, :fetch_user
   end
 
   pipeline :api do
@@ -20,59 +18,37 @@ defmodule CodeDuelsWeb.Router do
   scope "/", CodeDuelsWeb do
     pipe_through :browser
 
-    live "/", HomePageLive, :index
-    live "/tournaments", ComingSoonLive, :index
-    live "/leaderboard", ComingSoonLive, :index
-    live "/about", ComingSoonLive, :index
+    get "/login", AuthController, :new
+    post "/login", AuthController, :create
+    get "/logout", AuthController, :delete
+
+    pipe_through :redirect_if_not_authenticated
+
+    live_session :default,
+      on_mount: {CodeDuelsWeb.LiveAuth, :default} do
+      live "/", HomePageLive, :index
+    end
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", CodeDuelsWeb do
-  #   pipe_through :api
-  # end
-
-  # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:code_duels, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
-    import Phoenix.LiveDashboard.Router
-
     scope "/dev" do
       pipe_through :browser
+
+      import Phoenix.LiveDashboard.Router
 
       live_dashboard "/dashboard", metrics: CodeDuelsWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end
 
-  ## Authentication routes
-
-  scope "/", CodeDuelsWeb do
-    pipe_through [:browser, :require_authenticated_user]
-
-    live_session :require_authenticated_user,
-      on_mount: [{CodeDuelsWeb.UserAuth, :require_authenticated}] do
-      live "/users/settings", UserLive.Settings, :edit
-      live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
+  def redirect_if_not_authenticated(conn, _opts) do
+    if conn.assigns.current_user do
+      conn
+    else
+      conn
+      |> put_flash(:error, "You must be logged in.")
+      |> redirect(to: "/login")
+      |> halt()
     end
-
-    post "/users/update-password", UserSessionController, :update_password
-  end
-
-  scope "/", CodeDuelsWeb do
-    pipe_through [:browser]
-
-    live_session :current_user,
-      on_mount: [{CodeDuelsWeb.UserAuth, :mount_current_scope}] do
-      live "/users/register", UserLive.Registration, :new
-      live "/users/log-in", UserLive.Login, :new
-      live "/users/log-in/:token", UserLive.Confirmation, :new
-    end
-
-    post "/users/log-in", UserSessionController, :create
-    delete "/users/log-out", UserSessionController, :delete
   end
 end

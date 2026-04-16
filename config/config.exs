@@ -14,19 +14,6 @@
 # General application configuration
 import Config
 
-config :code_duels, :scopes,
-  user: [
-    default: true,
-    module: CodeDuels.Accounts.Scope,
-    assign_key: :current_scope,
-    access_path: [:user, :id],
-    schema_key: :user_id,
-    schema_type: :id,
-    schema_table: :users,
-    test_data_fixture: CodeDuels.AccountsFixtures,
-    test_setup_helper: :register_and_log_in_user
-  ]
-
 config :code_duels,
   ecto_repos: [CodeDuels.Repo],
   generators: [timestamp_type: :utc_datetime]

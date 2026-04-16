@@ -18,8 +18,8 @@ defmodule CodeDuelsWeb.ComingSoonPopup do
       role="alert"
     >
       <div class="flex-1">
-        <h3 class="font-bold text-lg"><%= @title %></h3>
-        <p class="text-sm opacity-90"><%= @message %></p>
+        <h3 class="font-bold text-lg">{@title}</h3>
+        <p class="text-sm opacity-90">{@message}</p>
       </div>
       <button
         phx-click="close"
@@ -43,7 +43,7 @@ defmodule CodeDuelsWeb.ComingSoonPopup do
     message = assigns[:message] || "This feature is under development. Stay tuned!"
 
     socket = assign(socket, show: true, timer: timer, title: title, message: message)
-    
+
     {:ok, socket}
   end
 
@@ -56,7 +56,9 @@ defmodule CodeDuelsWeb.ComingSoonPopup do
      socket
      |> assign(
        title: assigns[:title] || socket.assigns[:title] || "Coming Soon",
-       message: assigns[:message] || socket.assigns[:message] || "This feature is under development. Stay tuned!"
+       message:
+         assigns[:message] || socket.assigns[:message] ||
+           "This feature is under development. Stay tuned!"
      )}
   end
 
