@@ -13,6 +13,10 @@ defmodule CodeDuels.Tournaments.Tournament do
     field :name, :string
     field :is_open, :boolean
     field :start_time, :utc_datetime
+    field :pairing_strategy, :string
+    field :code_reveal, :string
+    field :current_round, :integer
+    field :status, :string
 
     timestamps(type: :utc_datetime)
   end
@@ -29,7 +33,11 @@ defmodule CodeDuels.Tournaments.Tournament do
       :max_participants,
       :name,
       :is_open,
-      :start_time
+      :start_time,
+      :pairing_strategy,
+      :code_reveal,
+      :current_round,
+      :status
     ])
     |> validate_required([:name, :is_open])
   end

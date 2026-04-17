@@ -12,6 +12,15 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
 
         <h1 class="text-4xl font-bold mb-8">{@tournament.name}</h1>
 
+        <div class="tabs tabs-boxed mb-6">
+          <.link navigate={"/#{@tournament.id}"} class="tab">
+            Раунды
+          </.link>
+          <.link navigate={"/#{@tournament.id}/standings"} class="tab">
+            Таблица
+          </.link>
+        </div>
+
         <div class="flex flex-col lg:flex-row gap-50">
           <div class="w-full lg:w-1/2">
             <div class="overflow-x-auto">

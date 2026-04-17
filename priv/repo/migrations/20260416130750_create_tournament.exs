@@ -14,6 +14,11 @@ defmodule CodeDuels.Repo.Migrations.CreateTournament do
       add :is_open, :bool, null: false, default: true
       add :start_time, :utc_datetime
 
+      add :pairing_strategy, :string, default: "swiss"
+      add :code_reveal, :string, default: "after_round"
+      add :current_round, :integer, default: 0
+      add :status, :string, default: "setup"
+
       timestamps(type: :utc_datetime)
     end
 
