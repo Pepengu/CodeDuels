@@ -108,4 +108,10 @@ defmodule CodeDuels.Accounts do
     |> User.changeset(%{username: new_username})
     |> Repo.update()
   end
+
+  def update_name(user, new_name) do
+    user
+    |> User.changeset(%{name: new_name})
+    |> Repo.update()
+  end
 end

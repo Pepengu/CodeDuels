@@ -4,7 +4,9 @@ defmodule CodeDuels.Accounts.User do
 
   schema "users" do
     field :username, :string
+    field :name, :string
     field :hashed_password, :string
+    field :is_admin, :boolean, default: false
 
     timestamps(type: :utc_datetime)
   end
@@ -12,9 +14,10 @@ defmodule CodeDuels.Accounts.User do
   @doc false
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:username, :hashed_password])
+    |> cast(attrs, [:username, :name, :hashed_password, :is_admin])
     |> validate_required(:username)
     |> validate_length(:username, min: 3, max: 32)
+    |> validate_length(:name, min: 1, max: 50)
     |> validate_format(:username, ~r/^[a-zA-Z0-9_]+$/,
       message: "must contain only letters, numbers, and underscores"
     )

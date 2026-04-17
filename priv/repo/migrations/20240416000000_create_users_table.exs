@@ -4,7 +4,9 @@ defmodule CodeDuels.Repo.Migrations.CreateUsersTable do
   def change do
     create table(:users) do
       add :username, :string, null: false
-      add :hashed_password, :string
+      add :hashed_password, :string, null: false
+      add :name, :string
+      add :is_admin, :bool, null: false, default: false
 
       timestamps(type: :utc_datetime)
     end

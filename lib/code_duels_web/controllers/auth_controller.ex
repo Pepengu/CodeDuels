@@ -21,7 +21,7 @@ defmodule CodeDuelsWeb.AuthController do
       user ->
         conn
         |> put_session(:user_id, user.id)
-        |> put_flash(:info, "Welcome back, #{user.username}!")
+        |> put_flash(:info, "Welcome back, #{user.name || user.username}!")
         |> redirect(to: "/")
     end
   end
@@ -31,7 +31,7 @@ defmodule CodeDuelsWeb.AuthController do
       {:ok, user} ->
         conn
         |> put_session(:user_id, user.id)
-        |> put_flash(:info, "Welcome, #{user.username}!")
+        |> put_flash(:info, "Welcome, #{user.name || user.username}!")
         |> redirect(to: "/")
 
       {:error, changeset} ->

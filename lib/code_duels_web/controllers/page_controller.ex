@@ -3,9 +3,9 @@ defmodule CodeDuelsWeb.PageController do
 
   def home(conn, _params) do
     IO.puts(conn)
-    #if Map.get(session, "user_id") == nil do
+    # if Map.get(session, "user_id") == nil do
     #  conn |> redirect("/login")
-    #end
+    # end
     render(conn, :home)
   end
 end

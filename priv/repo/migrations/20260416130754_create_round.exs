@@ -4,7 +4,7 @@ defmodule CodeDuels.Repo.Migrations.CreateRound do
   def change do
     create table(:rounds) do
       add :tournament_id, references(:users), null: false
-      add :problemset, {:array, references(:problem)}, null: false
+      add :problemset, {:array, :bigint}, null: false
       add :start_time, :time, null: false
 
       timestamps(type: :utc_datetime)

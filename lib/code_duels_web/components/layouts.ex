@@ -19,26 +19,11 @@ defmodule CodeDuelsWeb.Layouts do
       <div class="navbar-start">
         <a class="text-2xl font-bold text-primary" href="/">⚡ CodeDuels</a>
       </div>
-      <div class="navbar-center hidden lg:flex">
-        <ul class="menu menu-horizontal px-1">
-          <li>
-            <a class="text-base-content/80 hover:text-primary" href="/tournaments">Tournaments</a>
-          </li>
-          <li>
-            <a class="text-base-content/80 hover:text-primary" href="/leaderboard">Leaderboard</a>
-          </li>
-          <li><a class="text-base-content/80 hover:text-primary" href="/about">How it works</a></li>
-        </ul>
-      </div>
+      <div class="navbar-center hidden lg:flex"></div>
       <div class="navbar-end gap-2">
         <%= if @current_user do %>
-          <a class="btn btn-primary" href="/profile">{@current_user.username}</a>
-          <a class="btn btn-primary" href="/logout">Log Out</a>
-        <% else %>
-          <a class="btn btn-primary" href="/login">Login</a>
-          <a class="btn btn-primary" href="/register">Sign Up</a>
+          <a>{@current_user.name || @current_user.username}</a>
         <% end %>
-        <.locale_toggle locale={@locale} />
         <.theme_toggle />
       </div>
     </div>
