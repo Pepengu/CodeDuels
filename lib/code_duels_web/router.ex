@@ -30,6 +30,7 @@ defmodule CodeDuelsWeb.Router do
       live "/", TournamentPageLive, :index
       live "/:id", TournamentDetailLive, :show
       live "/:id/standings", StandingsLive, :show
+      live "/:id/pairings", PairingsLive, :show
       live "/:tournament_id/:round_number", RoundDetailLive, :show
     end
   end

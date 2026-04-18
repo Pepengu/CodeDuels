@@ -35,6 +35,15 @@ defmodule CodeDuels.Tournaments do
     )
   end
 
+  def get_duels_for_tournament(tournament_id) do
+    Repo.all(
+      from d in Duel,
+        where: d.tournament_id == ^tournament_id,
+        order_by: [asc: d.round_number],
+        preload: [player_a: [:user], player_b: [:user]]
+    )
+  end
+
   def create_duel(attrs \\ %{}) do
     %Duel{}
     |> Duel.changeset(attrs)

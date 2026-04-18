@@ -7,11 +7,7 @@ defmodule CodeDuelsWeb.StandingsLive do
     ~H"""
     <Layouts.app flash={@flash} current_user={@current_user}>
       <div class="container mx-auto px-4 py-8">
-        <.link navigate={"/#{@tournament.id}"} class="btn btn-ghost mb-4">
-          &larr; К турниру
-        </.link>
-
-        <h1 class="text-3xl font-bold mb-8 text-center">{@tournament.name} — Таблица</h1>
+        <.tournament_header tournament={@tournament} active_tab="standings" />
 
         <div class="flex justify-center">
           <table class="table table-zebra table-fixed w-auto">

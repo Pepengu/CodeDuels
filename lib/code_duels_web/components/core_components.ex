@@ -443,6 +443,58 @@ defmodule CodeDuelsWeb.CoreComponents do
   end
 
   @doc """
+  Renders tournament page header with navigation.
+
+  ## Examples
+
+      <.tournament_header tournament={@tournament} active_tab="pairings" />
+  """
+  attr :tournament, :any, required: true
+  attr :active_tab, :string, required: true
+
+  defp back_text("rounds"), do: "К турнирам"
+  defp back_text(_), do: "К турниру"
+
+  def tournament_header(assigns) do
+    active_tab = assigns.active_tab
+    tournament = assigns.tournament
+
+    subtitle = 
+      case active_tab do
+        "rounds" -> "Главная"
+        "standings" -> "Таблица"
+        "pairings" -> "Пары"
+        _ -> nil
+      end
+
+    ~H"""
+    <h1 class="text-4xl font-bold mb-2">{tournament.name}</h1>
+    <p class="text-lg opacity-70 mb-8">{subtitle}</p>
+
+    <div class="tabs tabs-boxed mb-6">
+      <.link
+        navigate={"/#{tournament.id}"}
+        class={"tab #{if active_tab == "rounds", do: "tab-active"}"}
+      >
+        Главная
+      </.link>
+      <.link
+        navigate={"/#{tournament.id}/standings"}
+        class={"tab #{if active_tab == "standings", do: "tab-active"}"}
+      >
+        Таблица
+      </.link>
+      <.link
+        navigate={"/#{tournament.id}/pairings"}
+        class={"tab #{if active_tab == "pairings", do: "tab-active"}"}
+      >
+        Пары
+      </.link>
+    </div>
+    """
+  end
+
+  @doc """
   Translates an error message using gettext.
   """
   def translate_error({msg, opts}) do

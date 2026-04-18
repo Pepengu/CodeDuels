@@ -6,20 +6,7 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
     <Layouts.app flash={@flash} current_user={@current_user}>
       <.live_component module={CodeDuelsWeb.RoundNotificationPopup} id="round-notification" />
       <div class="container mx-auto px-4 py-8">
-        <.link navigate="/" class="btn btn-ghost mb-4">
-          &larr; К турнирам
-        </.link>
-
-        <h1 class="text-4xl font-bold mb-8">{@tournament.name}</h1>
-
-        <div class="tabs tabs-boxed mb-6">
-          <.link navigate={"/#{@tournament.id}"} class="tab">
-            Раунды
-          </.link>
-          <.link navigate={"/#{@tournament.id}/standings"} class="tab">
-            Таблица
-          </.link>
-        </div>
+        <.tournament_header tournament={@tournament} active_tab="rounds" />
 
         <div class="flex flex-col lg:flex-row gap-50">
           <div class="w-full lg:w-1/2">

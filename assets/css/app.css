@@ -6,6 +6,7 @@
 @source "../js";
 @source "../../lib/code_duels_web";
 
+
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
 @plugin "../vendor/heroicons";
@@ -16,7 +17,6 @@
 @plugin "../vendor/daisyui" {
   themes: nord, dracula --default;
 }
-
 
 /* Add variants based on LiveView classes */
 @custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
