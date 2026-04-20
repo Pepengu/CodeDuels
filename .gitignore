@@ -40,3 +40,5 @@ npm-debug.log
 .postgres/*
 
 code_duels_better_one_later/
+
+/priv/uploads/problems

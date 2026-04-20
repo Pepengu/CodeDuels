@@ -9,8 +9,8 @@ defmodule CodeDuelsWeb.StandingsLive do
       <div class="container mx-auto px-4 py-8">
         <.tournament_header tournament={@tournament} active_tab="standings" />
 
-        <div class="flex justify-center">
-          <table class="table table-zebra table-fixed w-auto">
+        <div class="overflow-x-auto px-4">
+          <table class="table table-zebra w-auto">
             <thead>
               <tr>
                 <th class="text-center w-12">#</th>
@@ -28,12 +28,9 @@ defmodule CodeDuelsWeb.StandingsLive do
             </thead>
             <tbody>
               <%= for entry <- @standings do %>
-                <tr class={
-                  if @current_user && entry.user_id == @current_user.id,
-                    do: "ring ring-yellow-500 hover",
-                    else: "hover"
-                }>
-                  <td class="text-center font-semibold">
+                <% is_current_user = @current_user && entry.user_id == @current_user.id %>
+                <tr class="hover">
+                  <td class={cell_class("text-center font-semibold", is_current_user)}>
                     {case entry.rank do
                       1 -> "🥇"
                       2 -> "🥈"
@@ -41,16 +38,28 @@ defmodule CodeDuelsWeb.StandingsLive do
                       _ -> entry.rank
                     end}
                   </td>
-                  <td class="font-medium">{entry.name}</td>
-                  <td class="text-center font-bold">{Float.round(entry.score, 1)}</td>
-                  <td class="text-center">{entry.tournament_points}</td>
-                  <td class="text-center">{entry.total_penalty}</td>
-                  <td class="text-center text-green-600">{entry.wins}</td>
-                  <td class="text-center text-yellow-600">{entry.draws}</td>
-                  <td class="text-center text-red-600">{entry.losses}</td>
+                  <td class={cell_class("font-medium whitespace-nowrap", is_current_user)}>
+                    {entry.name}
+                  </td>
+                  <td class={cell_class("text-center font-bold", is_current_user)}>
+                    {Float.round(entry.score, 1)}
+                  </td>
+                  <td class={cell_class("text-center", is_current_user)}>
+                    {entry.tournament_points}
+                  </td>
+                  <td class={cell_class("text-center", is_current_user)}>{entry.total_penalty}</td>
+                  <td class={cell_class("text-center text-green-600", is_current_user)}>
+                    {entry.wins}
+                  </td>
+                  <td class={cell_class("text-center text-yellow-600", is_current_user)}>
+                    {entry.draws}
+                  </td>
+                  <td class={cell_class("text-center text-red-600", is_current_user)}>
+                    {entry.losses}
+                  </td>
                   <%= for round_num <- 1..@tournament.rounds do %>
                     <% round_data = Enum.at(entry.round_results, round_num - 1) %>
-                    <td class={result_class(round_data)}>
+                    <td class={cell_class(nil, is_current_user) ++ result_class(round_data)}>
                       <div class="font-bold">{elem(round_data, 0)}</div>
                       <div class="text-xs text-gray-400">{elem(round_data, 1)}</div>
                     </td>
@@ -78,14 +87,22 @@ defmodule CodeDuelsWeb.StandingsLive do
     {:ok, assign(socket, tournament: tournament, standings: standings)}
   end
 
+  defp cell_class(base_class, highlight?) do
+    if highlight? do
+      List.wrap(base_class) ++ ["bg-yellow-500/10"]
+    else
+      List.wrap(base_class)
+    end
+  end
+
   defp result_class(round_data) do
     result = elem(round_data, 0)
 
     case result do
-      "1" -> "text-center font-bold text-green-600"
-      "0.5" -> "text-center font-bold text-yellow-600"
-      "0" -> "text-center font-bold text-red-600"
-      _ -> "text-center text-gray-400"
+      "1" -> ["text-center", "font-bold", "text-green-600"]
+      "0.5" -> ["text-center", "font-bold", "text-yellow-600"]
+      "0" -> ["text-center", "font-bold", "text-red-600"]
+      _ -> ["text-center", "text-gray-400"]
     end
   end
 end

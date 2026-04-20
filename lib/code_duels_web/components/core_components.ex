@@ -459,7 +459,7 @@ defmodule CodeDuelsWeb.CoreComponents do
     active_tab = assigns.active_tab
     tournament = assigns.tournament
 
-    subtitle = 
+    subtitle =
       case active_tab do
         "rounds" -> "Главная"
         "standings" -> "Таблица"
