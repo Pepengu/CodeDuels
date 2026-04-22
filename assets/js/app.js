@@ -25,7 +25,7 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/code_duels"
 import topbar from "../vendor/topbar"
 
-let MathJaxHook = Hooks.MathJaxHook = {
+let MathJaxHook =  {
   mounted() {
     this.renderMath()
   },
