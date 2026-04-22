@@ -59,11 +59,11 @@ defmodule CodeDuelsWeb.RoundDetailLive do
                       <div class="card-body">
                         <div class="flex flex-row items-center justify-between">
                           <h3 class="font-semibold">{problem.title}</h3>
-                          <span class="badge badge-lg">{problem.difficulty}</span>
+                          <span class="badge badge-lg">{problem.letter}</span>
                         </div>
                         <p class="text-sm opacity-70 mt-2">{problem.description}</p>
                         <div class="mt-3 flex flex-row items-center justify-between">
-                          <span class="text-sm">Задача {idx + 1}</span>
+                          <!-- <span class="text-sm">Задача {idx + 1}</span> -->
                           <span class="font-semibold">{Enum.at(@round_scores, idx, "-")} очк</span>
                         </div>
                       </div>
@@ -98,6 +98,17 @@ defmodule CodeDuelsWeb.RoundDetailLive do
                         </tbody>
                       </table>
                     </div>
+                  </div>
+                </div>
+
+                <div class="card bg-base-200 shadow-xl mt-6">
+                  <div class="card-body">
+                    <.link
+                      navigate={~p"/#{@tournament_id}/#{@round_number}/submit"}
+                      class="btn btn-primary btn-block"
+                    >
+                      Отправить решение
+                    </.link>
                   </div>
                 </div>
               </div>
@@ -123,19 +134,24 @@ defmodule CodeDuelsWeb.RoundDetailLive do
                 <h2 class="text-xl font-semibold mb-4">Задачи</h2>
                 <div class="flex flex-col gap-4">
                   <%= for {problem, idx} <- Enum.with_index(@problems) do %>
-                    <div class="card bg-base-200 shadow-md">
-                      <div class="card-body">
-                        <div class="flex flex-row items-center justify-between">
-                          <h3 class="font-semibold">{problem.title}</h3>
-                          <span class="badge badge-lg">{problem.difficulty}</span>
-                        </div>
-                        <p class="text-sm opacity-70 mt-2">{problem.description}</p>
-                        <div class="mt-3 flex flex-row items-center justify-between">
-                          <span class="text-sm">Задача {idx + 1}</span>
-                          <span class="font-semibold">{Enum.at(@round_scores, idx, "-")} очк</span>
+                    <.link
+                      navigate={~p"/#{@tournament_id}/#{@round_number}/problem?letter=#{<<idx + ?A>>}"}
+                      class="block"
+                    >
+                      <div class="card bg-base-200 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
+                        <div class="card-body">
+                          <div class="flex flex-row items-center justify-between">
+                            <h3 class="font-semibold">{problem.title}</h3>
+                            <span class="badge badge-lg">{problem.letter}</span>
+                          </div>
+                          <p class="text-sm opacity-70 mt-2">{problem.description}</p>
+                          <div class="mt-3 flex flex-row items-center justify-between">
+                            <span class="text-sm"></span>
+                            <span class="font-semibold">{Enum.at(@round_scores, idx, "-")} очк</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </.link>
                   <% end %>
                 </div>
               </div>
@@ -168,6 +184,17 @@ defmodule CodeDuelsWeb.RoundDetailLive do
                     </div>
                   </div>
                 </div>
+
+                <div class="card bg-base-200 shadow-xl mt-6">
+                  <div class="card-body">
+                    <.link
+                      navigate={~p"/#{@tournament_id}/#{@round_number}/submit"}
+                      class="btn btn-primary btn-block"
+                    >
+                      Отправить решение
+                    </.link>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -178,6 +205,9 @@ defmodule CodeDuelsWeb.RoundDetailLive do
 
   def mount(%{"tournament_id" => tournament_id, "round_number" => round_number}, _session, socket) do
     tournament = CodeDuels.Tournaments.get_tournament!(tournament_id)
+    round = CodeDuels.Tournaments.get_round(tournament_id, round_number)
+    problemset = CodeDuels.Tournaments.get_problemset(round.problemset)
+    IO.inspect(problemset)
     round_num = String.to_integer(round_number)
 
     ppr = tournament.problems_per_round || 3
@@ -190,14 +220,18 @@ defmodule CodeDuelsWeb.RoundDetailLive do
 
     total_score = Enum.reject(round_scores, &is_nil/1) |> Enum.sum()
 
-    problems =
-      for i <- 0..(ppr - 1) do
-        %{
-          title: "Задача #{i + 1}",
-          difficulty: Enum.random(["Легко", "Средне", "Сложно"]),
-          description: "Решите эту задачу за отведённое время."
+    {problems, _} =
+      problemset
+      |> Enum.map_reduce(?A, fn problem, acc ->
+        {
+          %{
+            title: problem.title,
+            letter: <<acc>>,
+            description: "Решите эту задачу за отведённое время."
+          },
+          acc + 1
         }
-      end
+      end)
 
     is_admin = socket.assigns[:current_user] && socket.assigns[:current_user].is_admin
     now = DateTime.utc_now()

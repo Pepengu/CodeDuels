@@ -3,7 +3,7 @@ defmodule CodeDuels.Repo.Migrations.CreateTournament do
 
   def change do
     create table(:tournament) do
-      add :rounds, :int, null: false, default: 5
+      add :rounds_amount, :int, null: false, default: 5
       add :round_time, :integer, null: false, default: 2400
       add :intermission_time, :integer, null: false, default: 60
       add :penality, :int, null: false, default: 5

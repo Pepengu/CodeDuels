@@ -19,7 +19,7 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
                   </tr>
                   <tr>
                     <td class="font-semibold">Раунды</td>
-                    <td>{@tournament.rounds}</td>
+                    <td>{@tournament.rounds_amount}</td>
                   </tr>
                   <tr>
                     <td class="font-semibold">Задач в раунде</td>
@@ -53,7 +53,7 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
           <div class="w-full lg:w-1/3">
             <h2 class="text-xl font-semibold mb-4">Раунды</h2>
             <div class="flex flex-col gap-3">
-              <%= for round <- 1..(@tournament.rounds || 0) do %>
+              <%= for round <- 1..(@tournament.rounds_amount || 0) do %>
                 {render_round_card(assigns, round)}
               <% end %>
             </div>
@@ -182,7 +182,7 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
     is_admin = current_user && current_user.is_admin
 
     newly_unlocked =
-      for round <- 1..(tournament.rounds || 0),
+      for round <- 1..(tournament.rounds_amount || 0),
           round_unlock_time = calculate_round_unlock_time(tournament, round),
           round_unlock_time,
           reduce: nil do

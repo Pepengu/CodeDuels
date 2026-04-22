@@ -19,7 +19,7 @@ defmodule CodeDuelsWeb.TournamentPageLive do
               <div class="space-y-2 mt-4">
                 <div class="flex justify-between">
                   <span class="opacity-60">Раунды:</span>
-                  <span class="font-semibold">{tournament.rounds}</span>
+                  <span class="font-semibold">{tournament.rounds_amount}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="opacity-60">Время раунда:</span>

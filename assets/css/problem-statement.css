@@ -1,0 +1,66 @@
+.problem-statement {
+  display: block;
+  line-height: 1.5;
+  max-width: 100%;
+  font-size: 1.1em;
+}
+
+.problem-statement .sample-test {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 1rem 0 2rem 0;
+}
+
+.problem-statement .sample-test .input,
+.problem-statement .sample-test .output {
+  --size: auto;
+  display: block;
+  flex: 1 1 250px;
+  max-width: 100%;
+  border: 1px solid #aaa;
+  border-radius: 6px;
+  padding: 0.75rem;
+  box-sizing: border-box;
+  overflow: auto;
+  background-color: var(--color-base-100);
+}
+
+.problem-statement .sample-test .input .title,
+.problem-statement .sample-test .output .title {
+  border-bottom: 1px solid #ccc;  
+  padding-bottom: 0.5rem;         
+  margin-bottom: 0.5rem;         
+  display: block;
+  margin: 0 0 0.5rem 0;
+  padding: 0;
+  font-weight: 700;
+  font-size: 1.2rem;
+  line-height: 1.2;
+  background: transparent;
+}
+
+.problem-statement pre.content {
+  display: block;
+  margin: 0;
+  padding: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  background: transparent;
+  border: none;
+}
+
+.problem-statement .section-title {
+  display: block;
+  margin: 1.5rem 0 0.5rem 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.problem-statement .sample-test::after {
+  content: "";
+  display: table;
+  clear: both;
+}

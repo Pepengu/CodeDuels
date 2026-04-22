@@ -68,7 +68,8 @@ defmodule CodeDuels.MixProject do
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
       {:uuid, "~> 1.1"},
-      {:sweet_xml, "~> 0.7"}
+      {:sweet_xml, "~> 0.7"},
+      {:floki, ">= 0.35.0"}
     ]
   end
 

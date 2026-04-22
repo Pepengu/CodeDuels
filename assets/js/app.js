@@ -25,11 +25,30 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/code_duels"
 import topbar from "../vendor/topbar"
 
+let MathJaxHook = Hooks.MathJaxHook = {
+  mounted() {
+    this.renderMath()
+  },
+  updated() {
+    this.renderMath()
+  },
+  renderMath() {
+    // Wait for MathJax to be loaded
+    if (window.MathJax) {
+      window.MathJax.typesetPromise([this.el])
+        .catch(err => console.error('MathJax typeset error:', err))
+    } else {
+      // MathJax not yet loaded – wait a bit
+      setTimeout(() => this.renderMath(), 100)
+    }
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, MathJaxHook},
 })
 
 // Show progress bar on live navigation and form submits
@@ -80,5 +99,3 @@ if (process.env.NODE_ENV === "development") {
     window.liveReloader = reloader
   })
 }
-
-

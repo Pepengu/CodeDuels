@@ -5,6 +5,7 @@
 @source "../css";
 @source "../js";
 @source "../../lib/code_duels_web";
+@import "./problem-statement.css";
 
 
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.

@@ -3,7 +3,7 @@ defmodule CodeDuels.Tournaments.Tournament do
   import Ecto.Changeset
 
   schema "tournament" do
-    field :rounds, :integer
+    field :rounds_amount, :integer
     field :problems_per_round, :integer
     field :round_time, :integer
     field :intermission_time, :integer
@@ -18,13 +18,15 @@ defmodule CodeDuels.Tournaments.Tournament do
     field :current_round, :integer
     field :status, :string
 
+    has_many :rounds, CodeDuels.Tournaments.Round
+
     timestamps(type: :utc_datetime)
   end
 
   def changeset(tournament, attrs) do
     tournament
     |> cast(attrs, [
-      :rounds,
+      :rounds_amount,
       :problems_per_round,
       :round_time,
       :intermission_time,

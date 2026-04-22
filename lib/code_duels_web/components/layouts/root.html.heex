@@ -29,6 +29,28 @@
         window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
       })();
     </script>
+
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$$$', '$$$']],
+          displayMath: [['$$$$$$', '$$$$$$']]
+        },
+        options: {
+          ignoreHtmlClass: 'no-mathjax',    // optional: skip elements you don't want processed
+          processHtmlClass: 'mathjax-process'
+        },
+        startup: {
+          typeset: false                     // we'll manually trigger typesetting
+        }
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"
+      id="MathJax-script"
+      async
+    >
+    </script>
   </head>
 
   {@inner_content}

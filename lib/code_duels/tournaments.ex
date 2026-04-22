@@ -4,14 +4,21 @@ defmodule CodeDuels.Tournaments do
   """
 
   import Ecto.Query, warn: false
+  alias CodeDuels.Problems.Problem
   alias CodeDuels.Repo
-  alias CodeDuels.Tournaments.{Tournament, Participant, Duel}
+  alias CodeDuels.Tournaments.{Tournament, Participant, Duel, Round, Submission}
 
   def list_open_tournaments do
     Repo.all(from t in Tournament, where: t.is_open == true)
   end
 
   def get_tournament!(id), do: Repo.get!(Tournament, id)
+
+  def create_tournament(attrs \\ %{}) do
+    %Tournament{}
+    |> Tournament.changeset(attrs)
+    |> Repo.insert()
+  end
 
   def list_participants(tournament_id) do
     Repo.all(
@@ -25,6 +32,36 @@ defmodule CodeDuels.Tournaments do
     %Participant{}
     |> Participant.changeset(attrs)
     |> Repo.insert()
+  end
+
+  def get_round(tournament_id, round_number) do
+    Repo.one(
+      from r in Round,
+        where: r.tournament_id == ^tournament_id and r.round_number == ^round_number
+    )
+  end
+
+  def get_round!(id), do: Repo.get!(Round, id)
+
+  def create_submission(attrs \\ %{}) do
+    %Submission{}
+    |> Submission.changeset(attrs)
+    |> validate_code_not_empty()
+    |> Repo.insert()
+  end
+
+  defp validate_code_not_empty(changeset) do
+    Ecto.Changeset.validate_length(changeset, :code, min: 1)
+  end
+
+  def get_problemset(problemset) do
+    problemset
+    |> Enum.map(fn problem_id ->
+      Repo.one(
+        from p in Problem,
+          where: p.id == ^problem_id
+      )
+    end)
   end
 
   def get_duels_for_round(tournament_id, round_number) do
@@ -227,7 +264,7 @@ defmodule CodeDuels.Tournaments do
   def advance_round(tournament_id) do
     tournament = get_tournament!(tournament_id)
 
-    if tournament.current_round < tournament.rounds do
+    if tournament.current_round < tournament.rounds_amount do
       new_round = tournament.current_round + 1
 
       tournament
@@ -242,7 +279,7 @@ defmodule CodeDuels.Tournaments do
       |> Ecto.Changeset.change(%{status: "completed"})
       |> Repo.update!()
 
-      {:completed, tournament.rounds}
+      {:completed, tournament.rounds_amount}
     end
   end
 
@@ -263,7 +300,7 @@ defmodule CodeDuels.Tournaments do
           preload: [:player_a, :player_b]
       )
 
-    total_rounds = tournament.rounds || 0
+    total_rounds = tournament.rounds_amount || 0
     tournament_problem_scores = tournament.scores || [1, 1, 2, 2, 3]
 
     participant_stats =

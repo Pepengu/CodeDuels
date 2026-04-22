@@ -21,7 +21,7 @@ defmodule CodeDuelsWeb.StandingsLive do
                 <th class="text-center w-16">Победы</th>
                 <th class="text-center w-16">Ничьи</th>
                 <th class="text-center w-16">Поражения</th>
-                <%= for round_num <- 1..@tournament.rounds do %>
+                <%= for round_num <- 1..@tournament.rounds_amount do %>
                   <th class="text-center w-12">R{round_num}</th>
                 <% end %>
               </tr>
@@ -57,7 +57,7 @@ defmodule CodeDuelsWeb.StandingsLive do
                   <td class={cell_class("text-center text-red-600", is_current_user)}>
                     {entry.losses}
                   </td>
-                  <%= for round_num <- 1..@tournament.rounds do %>
+                  <%= for round_num <- 1..@tournament.rounds_amount do %>
                     <% round_data = Enum.at(entry.round_results, round_num - 1) %>
                     <td class={cell_class(nil, is_current_user) ++ result_class(round_data)}>
                       <div class="font-bold">{elem(round_data, 0)}</div>

@@ -131,7 +131,7 @@ defmodule CodeDuels.Problems.Importer do
   end
 
   defp extract_title_and_limits(xml, path) do
-    short_name = xml |> SweetXml.xpath(~x"//problem/@short-name"s)
+    short_name = xml |> SweetXml.xpath(~x"//name[@language='russian']/@value"s)
     time_limit = xml |> SweetXml.xpath(~x"//judging/testset/time-limit/text()"s)
     memory_limit = xml |> SweetXml.xpath(~x"//judging/testset/memory-limit/text()"s)
 

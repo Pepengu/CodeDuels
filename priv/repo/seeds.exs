@@ -16,6 +16,7 @@ import Ecto.Query
 alias CodeDuels.Problems.Problem
 alias CodeDuels.Problems.Importer
 alias CodeDuels.Accounts.User
+alias CodeDuels.Tournaments
 alias CodeDuels.Tournaments.Tournament
 alias CodeDuels.Tournaments.Participant
 alias CodeDuels.Tournaments.Duel
@@ -116,10 +117,9 @@ tournament =
   case Repo.get_by(Tournament, name: "Тестовый турнир") do
     nil ->
       {:ok, tournament} =
-        %Tournament{}
-        |> Tournament.changeset(%{
+        Tournaments.create_tournament(%{
           name: "Тестовый турнир",
-          rounds: 5,
+          rounds_amount: 5,
           problems_per_round: 5,
           round_time: 2400,
           intermission_time: 300,
@@ -129,7 +129,6 @@ tournament =
           is_open: true,
           start_time: DateTime.utc_now() |> DateTime.truncate(:second)
         })
-        |> Repo.insert()
 
       IO.puts("Created test tournament")
       tournament
@@ -138,6 +137,39 @@ tournament =
       IO.puts("Test tournament already exists")
       t
   end
+
+# Ensure rounds exist for tournament
+existing_rounds =
+  Repo.all(from r in CodeDuels.Tournaments.Round, where: r.tournament_id == ^tournament.id)
+
+if length(existing_rounds) == 0 do
+  IO.puts("Creating missing rounds...")
+
+  for round_num <- 1..tournament.rounds_amount do
+    %CodeDuels.Tournaments.Round{}
+    |> CodeDuels.Tournaments.Round.changeset(%{
+      tournament_id: tournament.id,
+      round_number: round_num,
+      problemset: [1, 1, 1, 1, 1],
+      start_time: ~T[00:00:00]
+    })
+    |> Repo.insert!()
+  end
+
+  IO.puts("Created #{tournament.rounds_amount} rounds")
+else
+  # Update all existing rounds to have problemset: [1,1,1,1,1]
+  tournament
+  |> Repo.preload(:rounds)
+  |> Map.get(:rounds)
+  |> Enum.each(fn round ->
+    round
+    |> Ecto.Changeset.change(%{problemset: [1, 1, 1, 1, 1]})
+    |> Repo.update!()
+  end)
+
+  IO.puts("Updated rounds with problemset: [1,1,1,1,1]")
+end
 
 # Add all users as participants
 for user <- all_users do
@@ -162,7 +194,7 @@ end
 
 # Generate duels for all rounds
 current = tournament.current_round
-total = tournament.rounds
+total = tournament.rounds_amount
 
 existing_duels = Repo.aggregate(from(d in Duel, where: d.tournament_id == ^tournament.id), :count)
 IO.puts("Current round: #{current}, target: #{total}, existing duels: #{existing_duels}")
@@ -180,7 +212,7 @@ if current < total or existing_duels == 0 do
   half = div(n, 2)
 
   created =
-    Enum.reduce(1..tournament.rounds, 0, fn round_num, acc ->
+    Enum.reduce(1..tournament.rounds_amount, 0, fn round_num, acc ->
       pairs =
         Enum.reduce(1..half, [], fn i, acc_pairs ->
           top_idx = i - 1
@@ -211,7 +243,7 @@ if current < total or existing_duels == 0 do
   IO.puts("Total duels: #{created}")
 
   tournament
-  |> Ecto.Changeset.change(%{current_round: tournament.rounds, status: "completed"})
+  |> Ecto.Changeset.change(%{current_round: tournament.rounds_amount, status: "completed"})
   |> Repo.update!()
 
   IO.puts("Seeding complete!")
