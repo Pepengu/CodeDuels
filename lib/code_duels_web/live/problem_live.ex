@@ -98,7 +98,7 @@ defmodule CodeDuelsWeb.ProblemLive do
 
             <div class="card bg-base-200 shadow-xl">
               <div class="card-body">
-                <div class="problem-statement">
+                <div class="problem-statement" , id="problem-statement" , phx-hook="MathJaxHook">
                   {raw(@statement_html)}
                 </div>
               </div>

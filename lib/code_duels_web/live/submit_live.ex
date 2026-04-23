@@ -9,7 +9,7 @@ defmodule CodeDuelsWeb.SubmitLive do
     {"Java", "java"},
     {"JavaScript", "js"},
     {"Go", "go"},
-    {"Rust", "rss"}
+    {"Rust", "rs"}
   ]
 
   def render(assigns) do
@@ -17,12 +17,7 @@ defmodule CodeDuelsWeb.SubmitLive do
     <Layouts.app flash={@flash} current_user={@current_user}>
       <.live_component module={CodeDuelsWeb.RoundNotificationPopup} id="round-notification" />
       <div class="container mx-auto px-4 py-8">
-        <.link navigate={"/#{@tournament_id}/#{@round_number}"} class="btn btn-ghost mb-4">
-          &larr; К раунду
-        </.link>
-
-        <h1 class="text-4xl font-bold mb-2">Отправка решения</h1>
-        <p class="text-lg text-base-content/70 mb-8">{@tournament.name} — Раунд {@round_number}</p>
+        <.round_header tournament={@tournament} round_number={@round_number} active_tab="submit" />
 
         <div class="grid gap-6 lg:grid-cols-3">
           <div class="lg:col-span-2">
@@ -72,15 +67,18 @@ defmodule CodeDuelsWeb.SubmitLive do
               </div>
 
               <div class="submission grid grid-cols-2 gap-4 items-center">
-                <div class= "error_box card p-2", style={
-                "
-                border-radius: 4px;
-                align-items: center;
-                justify-content: center;
-                border-radius: var(--radius-field);
-                white-space: pre-line;
-                #{error_style(@error)}
-                "}>{error_message(@error)}
+                <div
+                  class="error_box card p-2"
+                  style={
+                    "border-radius: 4px;
+                     align-items: center;
+                     justify-content: center;
+                     border-radius: var(--radius-field);
+                     white-space: pre-line;
+                     #{error_style(@error)}"
+                  }
+                >
+                  {error_message(@error)}
                 </div>
                 <button
                   type="button"
@@ -113,11 +111,6 @@ defmodule CodeDuelsWeb.SubmitLive do
                         <td class="font-semibold">Штраф</td>
                         <td>{@tournament.penality}</td>
                       </tr>
-                      <tr>
-                        <td class="font-semibold">Error</td>
-                        <td>{error_message(@error)}
-                        </td>
-                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -146,13 +139,22 @@ defmodule CodeDuelsWeb.SubmitLive do
   def error_message(:none), do: ""
   def error_message(:no_problem), do: "Необходимо выбрать задачу"
   def error_message(:no_code), do: "Поле кода не может быть пустым"
-  def error_message(:no_problem_and_code), do: "Необходимо выбрать задачу \n Поле кода не может быть пустым"
+  def error_message(:success), do: "Задача успешно отправлена"
+
+  def error_message(:no_problem_and_code),
+    do: "Необходимо выбрать задачу \n Поле кода не может быть пустым"
+
   def error_message(_), do: ""
 
   def error_style(:none), do: "visibility: hidden"
+
+  def error_style(:success),
+    do: "background-color: var(--color-success); color: var(--color-success-content);"
+
   def error_style(error) when error in [:no_problem, :no_code, :no_problem_and_code] do
     "background-color: var(--color-error); color: var(--color-error-content);"
   end
+
   def error_style(_), do: ""
 
   def mount(%{"tournament_id" => tournament_id, "round_number" => round_number}, _session, socket) do
@@ -225,11 +227,7 @@ defmodule CodeDuelsWeb.SubmitLive do
   end
 
   def handle_event("validate", %{"submission" => params}, socket) do
-    form =
-      Submission.create_changeset(params)
-      |> Map.put(:action, :validate)
-      |> to_form(as: :submission)
-
+    form = %{socket.assigns.form | params: params}
     {:noreply, assign(socket, form: form)}
   end
 
@@ -260,62 +258,34 @@ defmodule CodeDuelsWeb.SubmitLive do
 
   def handle_event("submit", %{"submission" => params}, socket) do
     current_user = socket.assigns.current_user
-    %{tournament_id: tournament_id, round_id: round_id} = socket.assigns
+    %{tournament_id: tournament_id, round_id: round_id, problems: problems} = socket.assigns
 
-    problem_id = params["problem_id"]
-    code = params["code"]
+    problem_id = String.to_integer(params["problem_id"])
+    # Find the problem letter from the loaded problems list
+    problem = Enum.find(problems, &(&1.id == problem_id))
+    problem_letter = if problem, do: problem.letter, else: nil
 
-    missing_problem = problem_id == "" or is_nil(problem_id)
-    missing_code = code == "" or is_nil(code) or code |> String.trim() == ""
+    attrs = %{
+      user_id: current_user.id,
+      round_id: round_id,
+      problem_id: problem_id,
+      problem_letter: problem_letter,
+      language: params["language"],
+      code: params["code"]
+    }
 
-    cond do
-      missing_problem and missing_code ->
-        changeset =
-          %{}
-          |> Submission.create_changeset()
-          |> Ecto.Changeset.add_error(:problem_id, "Выберите задачу")
-          |> Ecto.Changeset.add_error(:code, "Введите код")
+    case CodeDuels.Tournaments.create_submission(attrs) do
+      {:ok, _submission} ->
+        socket =
+          socket
+          |> put_flash(:success, "Решение отправлено!")
+          |> push_navigate(to: "/#{tournament_id}/#{socket.assigns.round_number}")
 
-        {:noreply, assign(socket, form: to_form(changeset, as: :submission))}
+        {:noreply, assign(socket, error: :success)}
 
-      missing_problem ->
-        changeset =
-          %{}
-          |> Submission.create_changeset()
-          |> Ecto.Changeset.add_error(:problem_id, "Выберите задачу")
-
-        {:noreply, assign(socket, form: to_form(changeset, as: :submission))}
-
-      missing_code ->
-        changeset =
-          %{}
-          |> Submission.create_changeset()
-          |> Ecto.Changeset.add_error(:code, "Введите код")
-
-        {:noreply, assign(socket, form: to_form(changeset, as: :submission))}
-
-      true ->
-        attrs = %{
-          user_id: current_user.id,
-          round_id: round_id,
-          problem_id: String.to_integer(problem_id),
-          language: params["language"],
-          code: code
-        }
-
-        case CodeDuels.Tournaments.create_submission(attrs) do
-          {:ok, _submission} ->
-            socket =
-              socket
-              |> put_flash(:success, "Решение отправлено!")
-              |> push_navigate(to: "/#{tournament_id}/#{socket.assigns.round_number}")
-
-            {:noreply, socket}
-
-          {:error, changeset} ->
-            form = to_form(changeset, as: :submission)
-            {:noreply, assign(socket, form: form)}
-        end
+      {:error, changeset} ->
+        form = to_form(changeset, as: :submission)
+        {:noreply, assign(socket, form: form)}
     end
   end
 

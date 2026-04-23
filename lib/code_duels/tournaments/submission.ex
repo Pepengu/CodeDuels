@@ -6,6 +6,7 @@ defmodule CodeDuels.Tournaments.Submission do
     field :language, :string
     field :code, :string
     field :status, :string, default: "pending"
+    field :problem_letter, :string
 
     belongs_to :user, CodeDuels.Accounts.User
     belongs_to :round, CodeDuels.Tournaments.Round
@@ -16,8 +17,8 @@ defmodule CodeDuels.Tournaments.Submission do
 
   def changeset(submission, attrs) do
     submission
-    |> cast(attrs, [:user_id, :round_id, :problem_id, :language, :code, :status])
-    |> validate_required([:user_id, :round_id, :problem_id, :language, :code])
+    |> cast(attrs, [:user_id, :round_id, :problem_id, :language, :code, :status, :problem_letter])
+    |> validate_required([:user_id, :round_id, :problem_id, :language, :code, :problem_letter])
   end
 
   def create_changeset(attrs) do

@@ -16,12 +16,7 @@ defmodule CodeDuelsWeb.RoundDetailLive do
         <Layouts.app flash={@flash} current_user={@current_user}>
           <.live_component module={CodeDuelsWeb.RoundNotificationPopup} id="round-notification" />
           <div class="container mx-auto px-4 py-8">
-            <.link navigate={"/#{@tournament_id}"} class="btn btn-ghost mb-4">
-              &larr; К турниру
-            </.link>
-
-            <h1 class="text-4xl font-bold mb-2">Раунд {@round_number}</h1>
-            <p class="text-lg text-base-content/70 mb-8">{@tournament.name}</p>
+            <.round_header tournament={@tournament} round_number={@round_number} active_tab="problems" />
 
             <div class="card bg-base-200 shadow-xl">
               <div class="card-body text-center py-12">
@@ -39,12 +34,7 @@ defmodule CodeDuelsWeb.RoundDetailLive do
         <Layouts.app flash={@flash} current_user={@current_user}>
           <.live_component module={CodeDuelsWeb.RoundNotificationPopup} id="round-notification" />
           <div class="container mx-auto px-4 py-8">
-            <.link navigate={"/#{@tournament_id}"} class="btn btn-ghost mb-4">
-              &larr; К турниру
-            </.link>
-
-            <h1 class="text-4xl font-bold mb-2">Раунд {@round_number}</h1>
-            <p class="text-lg text-base-content/70 mb-8">{@tournament.name}</p>
+            <.round_header tournament={@tournament} round_number={@round_number} active_tab="problems" />
 
             <div class="alert alert-warning mb-6">
               <span>Раунд начнётся через: <strong>{time_remaining}</strong></span>
@@ -63,7 +53,6 @@ defmodule CodeDuelsWeb.RoundDetailLive do
                         </div>
                         <p class="text-sm opacity-70 mt-2">{problem.description}</p>
                         <div class="mt-3 flex flex-row items-center justify-between">
-                          <!-- <span class="text-sm">Задача {idx + 1}</span> -->
                           <span class="font-semibold">{Enum.at(@round_scores, idx, "-")} очк</span>
                         </div>
                       </div>
@@ -122,12 +111,7 @@ defmodule CodeDuelsWeb.RoundDetailLive do
         <Layouts.app flash={@flash} current_user={@current_user}>
           <.live_component module={CodeDuelsWeb.RoundNotificationPopup} id="round-notification" />
           <div class="container mx-auto px-4 py-8">
-            <.link navigate={"/#{@tournament_id}"} class="btn btn-ghost mb-4">
-              &larr; К турниру
-            </.link>
-
-            <h1 class="text-4xl font-bold mb-2">Раунд {@round_number}</h1>
-            <p class="text-lg text-base-content/70 mb-8">{@tournament.name}</p>
+            <.round_header tournament={@tournament} round_number={@round_number} active_tab="problems" />
 
             <div class="grid gap-6 lg:grid-cols-3">
               <div class="lg:col-span-2">
@@ -146,7 +130,6 @@ defmodule CodeDuelsWeb.RoundDetailLive do
                           </div>
                           <p class="text-sm opacity-70 mt-2">{problem.description}</p>
                           <div class="mt-3 flex flex-row items-center justify-between">
-                            <span class="text-sm"></span>
                             <span class="font-semibold">{Enum.at(@round_scores, idx, "-")} очк</span>
                           </div>
                         </div>

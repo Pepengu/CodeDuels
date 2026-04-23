@@ -150,7 +150,7 @@ if length(existing_rounds) == 0 do
     |> CodeDuels.Tournaments.Round.changeset(%{
       tournament_id: tournament.id,
       round_number: round_num,
-      problemset: [1, 1, 1, 1, 1],
+      problemset: [1, 2, 3, 4, 5],
       start_time: ~T[00:00:00]
     })
     |> Repo.insert!()
@@ -164,11 +164,11 @@ else
   |> Map.get(:rounds)
   |> Enum.each(fn round ->
     round
-    |> Ecto.Changeset.change(%{problemset: [1, 1, 1, 1, 1]})
+    |> Ecto.Changeset.change(%{problemset: [1, 2, 3, 4, 5]})
     |> Repo.update!()
   end)
 
-  IO.puts("Updated rounds with problemset: [1,1,1,1,1]")
+  IO.puts("Updated rounds with problemset: [1,2,3,4,5]")
 end
 
 # Add all users as participants

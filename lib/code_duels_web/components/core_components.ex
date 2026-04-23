@@ -494,6 +494,46 @@ defmodule CodeDuelsWeb.CoreComponents do
     """
   end
 
+  def round_header(assigns) do
+    active_tab = Map.get(assigns, :active_tab, "problems")
+    tournament = assigns.tournament
+    round_number = assigns.round_number
+
+    subtitle =
+      case active_tab do
+        "problems" -> "Задачи"
+        "submissions" -> "Посылки"
+        "submit" -> "Отправить"
+        _ -> nil
+      end
+
+    ~H"""
+    <h1 class="text-4xl font-bold mb-2">{tournament.name}</h1>
+    <p class="text-lg opacity-70 mb-8">{subtitle} — Раунд {round_number}</p>
+
+    <div class="tabs tabs-boxed mb-6">
+      <.link
+        navigate={"/#{tournament.id}/#{round_number}"}
+        class={"tab #{if active_tab == "problems", do: "tab-active"}"}
+      >
+        Задачи
+      </.link>
+      <.link
+        navigate={"/#{tournament.id}/#{round_number}/submissions"}
+        class={"tab #{if active_tab == "submissions", do: "tab-active"}"}
+      >
+        Посылки
+      </.link>
+      <.link
+        navigate={"/#{tournament.id}/#{round_number}/submit"}
+        class={"tab #{if active_tab == "submit", do: "tab-active"}"}
+      >
+        Отправить
+      </.link>
+    </div>
+    """
+  end
+
   @doc """
   Translates an error message using gettext.
   """

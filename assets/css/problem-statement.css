@@ -6,17 +6,17 @@
 }
 
 .problem-statement .sample-test {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
   margin: 1rem 0 2rem 0;
 }
 
 .problem-statement .sample-test .input,
 .problem-statement .sample-test .output {
+  all: unset;
   --size: auto;
   display: block;
-  flex: 1 1 250px;
   max-width: 100%;
   border: 1px solid #aaa;
   border-radius: 6px;

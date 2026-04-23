@@ -72,6 +72,89 @@ defmodule CodeDuels.Tournaments do
     )
   end
 
+  def get_duel_for_user(tournament_id, round_number, user_id) do
+    Repo.one(
+      from d in Duel,
+        join: pa in assoc(d, :player_a),
+        join: pb in assoc(d, :player_b),
+        where:
+          d.tournament_id == ^tournament_id and d.round_number == ^round_number and
+            (pa.user_id == ^user_id or pb.user_id == ^user_id),
+        preload: [player_a: [:user], player_b: [:user]]
+    )
+  end
+
+  def get_submissions_for_participants(participant_user_ids, round_id, problem_ids)
+      when is_list(participant_user_ids) do
+    submissions =
+      Repo.all(
+        from s in Submission,
+          where: s.round_id == ^round_id and s.user_id in ^participant_user_ids,
+          order_by: [desc: s.inserted_at],
+          preload: [:user, :problem]
+      )
+
+    for user_id <- participant_user_ids do
+      user_submissions =
+        Enum.filter(submissions, fn s -> s.user_id == user_id end)
+
+      problem_data =
+        for problem_id <- problem_ids do
+          user_prob_subs =
+            Enum.filter(user_submissions, fn s -> s.problem_id == problem_id end)
+            |> Enum.sort_by(& &1.inserted_at, {:desc, DateTime})
+
+          {wrong_count, final_status, final_time} =
+            cond do
+              Enum.any?(user_prob_subs, fn s ->
+                s.status == "accepted" or s.status == "solved"
+              end) ->
+                correct =
+                  Enum.find(user_prob_subs, fn s ->
+                    s.status == "accepted" or s.status == "solved"
+                  end)
+
+                wrong_before =
+                  Enum.count(
+                    Enum.take_while(user_prob_subs, fn s ->
+                      s.id != correct.id and s.inserted_at <= correct.inserted_at
+                    end),
+                    fn s -> s.status != "accepted" and s.status != "solved" end
+                  )
+
+                {wrong_before, "solved", correct.inserted_at}
+
+              user_prob_subs == [] ->
+                {nil, "none", nil}
+
+              Enum.any?(user_prob_subs, fn s -> s.status == "pending" end) ->
+                last = List.first(user_prob_subs)
+                wrong_count = Enum.count(Enum.drop(user_prob_subs, 1))
+                {wrong_count, "pending", last.inserted_at}
+
+              true ->
+                last = List.first(user_prob_subs)
+                wrong_count = Enum.count(user_prob_subs)
+                {wrong_count, "unsolved", last.inserted_at}
+            end
+
+          {problem_id, %{wrong_count: wrong_count, status: final_status, time: final_time}}
+        end
+
+      {user_id, Map.new(problem_data)}
+    end
+    |> Map.new()
+  end
+
+  def get_all_user_submissions(user_id, round_id) do
+    Repo.all(
+      from s in Submission,
+        where: s.user_id == ^user_id and s.round_id == ^round_id,
+        order_by: [desc: s.inserted_at],
+        preload: [:problem]
+    )
+  end
+
   def get_duels_for_tournament(tournament_id) do
     Repo.all(
       from d in Duel,
