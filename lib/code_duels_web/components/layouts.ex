@@ -73,7 +73,7 @@ defmodule CodeDuelsWeb.Layouts do
   def theme_toggle(assigns) do
     ~H"""
     <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/2 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=dark]_&]:left-1/2 transition-[left]" />
+      <div class="absolute w-1/2 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=tokyo-night]_&]:left-1/2 transition-[left]" />
 
       <button
         class="flex p-2 cursor-pointer w-1/2 justify-center"
@@ -86,7 +86,7 @@ defmodule CodeDuelsWeb.Layouts do
       <button
         class="flex p-2 cursor-pointer w-1/2 justify-center"
         phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="dark"
+        data-phx-theme="tokyo-night"
       >
         <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
       </button>

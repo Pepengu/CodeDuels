@@ -16,7 +16,42 @@
    curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.js
    Make sure to look at the daisyUI changelog: https://daisyui.com/docs/changelog/ */
 @plugin "../vendor/daisyui" {
-  themes: nord, dracula --default;
+  themes: nord, tokyo-night --default;
+}
+
+/* Tokyo Night Moon - custom dark theme replacing dracula */
+@layer base {
+  [data-theme="tokyo-night"] {
+    color-scheme: dark;
+    --color-base-100: oklch(0.30 0.035 265);
+    --color-base-200: oklch(0.26 0.03 265);
+    --color-base-300: oklch(0.22 0.03 265);
+    --color-base-content: oklch(0.92 0.04 265);
+    --color-primary: oklch(0.65 0.15 260);
+    --color-primary-content: oklch(0.15 0.03 260);
+    --color-secondary: oklch(0.65 0.16 290);
+    --color-secondary-content: oklch(0.15 0.03 290);
+    --color-accent: oklch(0.82 0.10 210);
+    --color-accent-content: oklch(0.15 0.015 210);
+    --color-neutral: oklch(0.28 0.04 260);
+    --color-neutral-content: oklch(0.80 0.04 265);
+    --color-info: oklch(0.72 0.14 220);
+    --color-info-content: oklch(0.95 0.01 220);
+    --color-success: oklch(0.78 0.18 135);
+    --color-success-content: oklch(0.95 0.01 135);
+    --color-warning: oklch(0.77 0.12 75);
+    --color-warning-content: oklch(0.15 0.01 75);
+    --color-error: oklch(0.70 0.18 20);
+    --color-error-content: oklch(0.95 0.01 20);
+    --radius-selector: 0.5rem;
+    --radius-field: 0.25rem;
+    --radius-box: 0.5rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 1;
+    --noise: 0;
+  }
 }
 
 /* Add variants based on LiveView classes */
