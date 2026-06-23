@@ -37,6 +37,7 @@ defmodule CodeDuelsWeb.SubmitLive do
                     type="select"
                     options={@languages}
                     class="select-bordered select w-full"
+                    phx-hook="LanguageSelectHook"
                   />
                 </div>
 
@@ -157,7 +158,11 @@ defmodule CodeDuelsWeb.SubmitLive do
 
   def error_style(_), do: ""
 
-  def mount(%{"tournament_id" => tournament_id, "round_number" => round_number}, _session, socket) do
+  def mount(
+        %{"tournament_id" => tournament_id, "round_number" => round_number} = params,
+        _session,
+        socket
+      ) do
     tournament = CodeDuels.Tournaments.get_tournament!(tournament_id)
     round = CodeDuels.Tournaments.get_round(tournament_id, round_number)
     round_num = String.to_integer(round_number)
@@ -183,9 +188,17 @@ defmodule CodeDuelsWeb.SubmitLive do
         | Enum.map(problems, fn p -> {"#{p.letter} - #{p.title}", to_string(p.id)} end)
       ]
 
+    preselected_problem_id =
+      if letter = params["letter"] do
+        case Enum.find(problems, &(&1.letter == String.upcase(letter))) do
+          nil -> nil
+          p -> to_string(p.id)
+        end
+      end
+
     is_admin = socket.assigns[:current_user] && socket.assigns[:current_user].is_admin
     now = DateTime.utc_now()
-    round_unlock_time = calculate_round_unlock_time(tournament, round_num)
+    round_unlock_time = CodeDuels.Tournaments.round_unlock_time(tournament, round_num)
 
     round_end_time =
       if round_unlock_time,
@@ -198,8 +211,10 @@ defmodule CodeDuelsWeb.SubmitLive do
     round_time_minutes = div(tournament.round_time, 60)
     time_remaining = calculate_time_remaining(now, round_end_time, round_unlock_time)
 
+    initial = if preselected_problem_id, do: %{"problem_id" => preselected_problem_id}, else: %{}
+
     form =
-      %{}
+      initial
       |> Submission.create_changeset()
       |> to_form(as: :submission)
 
@@ -228,6 +243,11 @@ defmodule CodeDuelsWeb.SubmitLive do
 
   def handle_event("validate", %{"submission" => params}, socket) do
     form = %{socket.assigns.form | params: params}
+    {:noreply, assign(socket, form: form)}
+  end
+
+  def handle_event("restore_language", %{"language" => lang}, socket) do
+    form = %{socket.assigns.form | params: Map.put(socket.assigns.form.params, "language", lang)}
     {:noreply, assign(socket, form: form)}
   end
 
@@ -308,17 +328,6 @@ defmodule CodeDuelsWeb.SubmitLive do
        time_based_locked: is_time_based_locked,
        time_remaining: time_remaining
      )}
-  end
-
-  defp calculate_round_unlock_time(tournament, round) do
-    if tournament.start_time do
-      offset_seconds =
-        (round - 1) * tournament.round_time + (round - 1) * tournament.intermission_time
-
-      DateTime.add(tournament.start_time, offset_seconds, :second)
-    else
-      nil
-    end
   end
 
   defp schedule_timer do

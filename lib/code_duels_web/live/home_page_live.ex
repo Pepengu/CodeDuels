@@ -1,5 +1,4 @@
 defmodule CodeDuelsWeb.HomePageLive do
-  alias Phoenix.Debug
   use CodeDuelsWeb, :live_view
 
   def render(assigns) do

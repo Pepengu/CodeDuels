@@ -3,15 +3,17 @@ defmodule CodeDuelsWeb.RoundDetailLive do
 
   def render(assigns) do
     time_remaining =
-      if @round_unlock_time && @now do
-        diff = DateTime.diff(@round_unlock_time, @now)
+      if assigns.round_unlock_time && assigns.now do
+        diff = DateTime.diff(assigns.round_unlock_time, assigns.now)
         if diff > 0, do: format_time(diff), else: "0 сек"
       else
         ""
       end
 
+    assigns = assign(assigns, :time_remaining, time_remaining)
+
     cond do
-      @locked ->
+      assigns.locked ->
         ~H"""
         <Layouts.app flash={@flash} current_user={@current_user}>
           <.live_component module={CodeDuelsWeb.RoundNotificationPopup} id="round-notification" />
@@ -22,14 +24,14 @@ defmodule CodeDuelsWeb.RoundDetailLive do
               <div class="card-body text-center py-12">
                 <h2 class="text-2xl font-bold">Раунд ещё не начался</h2>
                 <p class="text-lg opacity-70 mt-4">До начала осталось</p>
-                <p class="text-3xl font-bold text-primary mt-2">{time_remaining}</p>
+                <p class="text-3xl font-bold text-primary mt-2">{@time_remaining}</p>
               </div>
             </div>
           </div>
         </Layouts.app>
         """
 
-      @time_based_locked ->
+      assigns.time_based_locked ->
         ~H"""
         <Layouts.app flash={@flash} current_user={@current_user}>
           <.live_component module={CodeDuelsWeb.RoundNotificationPopup} id="round-notification" />
@@ -37,7 +39,7 @@ defmodule CodeDuelsWeb.RoundDetailLive do
             <.round_header tournament={@tournament} round_number={@round_number} active_tab="problems" />
 
             <div class="alert alert-warning mb-6">
-              <span>Раунд начнётся через: <strong>{time_remaining}</strong></span>
+              <span>Раунд начнётся через: <strong>{@time_remaining}</strong></span>
             </div>
 
             <div class="grid gap-6 lg:grid-cols-3">

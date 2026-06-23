@@ -85,18 +85,22 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
       is_nil(round_unlock_time) ||
         DateTime.compare(now, round_unlock_time) in [:gt, :eq]
 
+    assigns = assign(assigns, :round_number, round)
+    assigns = assign(assigns, :ppr, ppr)
+    assigns = assign(assigns, :round_scores, round_scores || "-")
+
     cond do
       is_unlocked_by_time ->
         ~H"""
         <.link
-          navigate={"/#{@tournament.id}/#{round}"}
+          navigate={"/#{@tournament.id}/#{@round_number}"}
           class="card bg-base-200 hover:bg-base-300 shadow-md hover:shadow-lg transition-all"
         >
           <div class="card-body flex flex-row items-center justify-between py-3">
             <div class="flex flex-col">
-              <span class="font-semibold text-lg">Раунд {round}</span>
+              <span class="font-semibold text-lg">Раунд {@round_number}</span>
               <span class="text-xs opacity-70">
-                {ppr} задач · {round_scores || "-"} очк
+                {@ppr} задач · {@round_scores} очк
               </span>
             </div>
             <span class="text-xl">&rarr;</span>
@@ -106,16 +110,17 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
 
       is_admin ->
         remaining = DateTime.diff(round_unlock_time, now)
+        assigns = assign(assigns, :remaining, remaining)
 
         ~H"""
         <.link
-          navigate={"/#{@tournament.id}/#{round}"}
+          navigate={"/#{@tournament.id}/#{@round_number}"}
           class="card bg-base-300 shadow-md opacity-70 hover:opacity-90"
         >
           <div class="card-body flex flex-row items-center justify-between py-3">
             <div class="flex flex-col">
-              <span class="font-semibold text-lg">Раунд {round}</span>
-              <span class="text-xs opacity-70">Начнётся через {format_time(remaining)}</span>
+              <span class="font-semibold text-lg">Раунд {@round_number}</span>
+              <span class="text-xs opacity-70">Начнётся через {format_time(@remaining)}</span>
             </div>
             <span class="text-xl">🔒</span>
           </div>
@@ -124,13 +129,14 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
 
       true ->
         remaining = DateTime.diff(round_unlock_time, now)
+        assigns = assign(assigns, :remaining, remaining)
 
         ~H"""
         <div class="card bg-base-300 shadow-md opacity-70">
           <div class="card-body flex flex-row items-center justify-between py-3">
             <div class="flex flex-col">
-              <span class="font-semibold text-lg">Раунд {round}</span>
-              <span class="text-xs opacity-70">Начнётся через {format_time(remaining)}</span>
+              <span class="font-semibold text-lg">Раунд {@round_number}</span>
+              <span class="text-xs opacity-70">Начнётся через {format_time(@remaining)}</span>
             </div>
             <span class="text-xl">🔒</span>
           </div>

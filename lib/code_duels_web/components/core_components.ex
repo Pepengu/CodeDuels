@@ -452,41 +452,37 @@ defmodule CodeDuelsWeb.CoreComponents do
   attr :tournament, :any, required: true
   attr :active_tab, :string, required: true
 
-  defp back_text("rounds"), do: "К турнирам"
-  defp back_text(_), do: "К турниру"
-
   def tournament_header(assigns) do
-    active_tab = assigns.active_tab
-    tournament = assigns.tournament
-
     subtitle =
-      case active_tab do
+      case assigns.active_tab do
         "rounds" -> "Главная"
         "standings" -> "Таблица"
         "pairings" -> "Пары"
         _ -> nil
       end
 
+    assigns = assign(assigns, :subtitle, subtitle)
+
     ~H"""
-    <h1 class="text-4xl font-bold mb-2">{tournament.name}</h1>
-    <p class="text-lg opacity-70 mb-8">{subtitle}</p>
+    <h1 class="text-4xl font-bold mb-2">{@tournament.name}</h1>
+    <p class="text-lg opacity-70 mb-8">{@subtitle}</p>
 
     <div class="tabs tabs-boxed mb-6">
       <.link
-        navigate={"/#{tournament.id}"}
-        class={"tab #{if active_tab == "rounds", do: "tab-active"}"}
+        navigate={"/#{@tournament.id}"}
+        class={"tab #{if @active_tab == "rounds", do: "tab-active"}"}
       >
         Главная
       </.link>
       <.link
-        navigate={"/#{tournament.id}/standings"}
-        class={"tab #{if active_tab == "standings", do: "tab-active"}"}
+        navigate={"/#{@tournament.id}/standings"}
+        class={"tab #{if @active_tab == "standings", do: "tab-active"}"}
       >
         Таблица
       </.link>
       <.link
-        navigate={"/#{tournament.id}/pairings"}
-        class={"tab #{if active_tab == "pairings", do: "tab-active"}"}
+        navigate={"/#{@tournament.id}/pairings"}
+        class={"tab #{if @active_tab == "pairings", do: "tab-active"}"}
       >
         Пары
       </.link>
@@ -495,38 +491,36 @@ defmodule CodeDuelsWeb.CoreComponents do
   end
 
   def round_header(assigns) do
-    active_tab = Map.get(assigns, :active_tab, "problems")
-    tournament = assigns.tournament
-    round_number = assigns.round_number
-
     subtitle =
-      case active_tab do
+      case assigns.active_tab do
         "problems" -> "Задачи"
         "submissions" -> "Посылки"
         "submit" -> "Отправить"
         _ -> nil
       end
 
+    assigns = assign(assigns, :subtitle, subtitle)
+
     ~H"""
-    <h1 class="text-4xl font-bold mb-2">{tournament.name}</h1>
-    <p class="text-lg opacity-70 mb-8">{subtitle} — Раунд {round_number}</p>
+    <h1 class="text-4xl font-bold mb-2">{@tournament.name}</h1>
+    <p class="text-lg opacity-70 mb-8">{@subtitle} — Раунд {@round_number}</p>
 
     <div class="tabs tabs-boxed mb-6">
       <.link
-        navigate={"/#{tournament.id}/#{round_number}"}
-        class={"tab #{if active_tab == "problems", do: "tab-active"}"}
+        navigate={"/#{@tournament.id}/#{@round_number}"}
+        class={"tab #{if @active_tab == "problems", do: "tab-active"}"}
       >
         Задачи
       </.link>
       <.link
-        navigate={"/#{tournament.id}/#{round_number}/submissions"}
-        class={"tab #{if active_tab == "submissions", do: "tab-active"}"}
+        navigate={"/#{@tournament.id}/#{@round_number}/submissions"}
+        class={"tab #{if @active_tab == "submissions", do: "tab-active"}"}
       >
         Посылки
       </.link>
       <.link
-        navigate={"/#{tournament.id}/#{round_number}/submit"}
-        class={"tab #{if active_tab == "submit", do: "tab-active"}"}
+        navigate={"/#{@tournament.id}/#{@round_number}/submit"}
+        class={"tab #{if @active_tab == "submit", do: "tab-active"}"}
       >
         Отправить
       </.link>

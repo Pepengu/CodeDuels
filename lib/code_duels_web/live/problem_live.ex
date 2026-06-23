@@ -2,16 +2,8 @@ defmodule CodeDuelsWeb.ProblemLive do
   use CodeDuelsWeb, :live_view
 
   def render(assigns) do
-    time_remaining =
-      if assigns.round_unlock_time && assigns.now do
-        diff = DateTime.diff(assigns.round_unlock_time, assigns.now)
-        if diff > 0, do: format_time(diff), else: "0 сек"
-      else
-        ""
-      end
-
     cond do
-      @locked ->
+      assigns.locked ->
         ~H"""
         <Layouts.app flash={@flash} current_user={@current_user}>
           <.live_component module={CodeDuelsWeb.RoundNotificationPopup} id="round-notification" />
@@ -26,8 +18,15 @@ defmodule CodeDuelsWeb.ProblemLive do
             <div class="card bg-base-200 shadow-xl">
               <div class="card-body text-center py-12">
                 <h2 class="text-2xl font-bold">Раунд ещё не начался</h2>
-                <p class="text-lg opacity-70 mt-4">До начала осталось</p>
-                <p class="text-3xl font-bold text-primary mt-2">{time_remaining}</p>
+                <p
+                  id="locked-timer"
+                  class="text-3xl font-bold text-primary mt-2"
+                  phx-hook="CountdownHook"
+                  data-unlock={@unlock_ts}
+                  data-end={@end_ts}
+                >
+                  {@time_remaining}
+                </p>
               </div>
             </div>
           </div>
@@ -75,31 +74,44 @@ defmodule CodeDuelsWeb.ProblemLive do
               <span class="text-lg font-semibold">Задача {@problem_letter}</span>
             </div>
 
-            <div class="card bg-base-200 shadow-xl mb-6">
-              <div class="card-body">
-                <h1 class="text-3xl font-bold mb-4">{assigns.problem.title}</h1>
+            <div class="grid grid-cols-[5fr_1fr] gap-2">
+              <div>
+                <div class="card bg-base-200 shadow-xl mb-6">
+                  <div class="card-body">
+                    <h1 class="text-3xl font-bold mb-4">{assigns.problem.title}</h1>
 
-                <div class="flex flex-wrap gap-6 text-sm">
-                  <div class="flex items-center gap-2">
-                    <span class="font-semibold">Ограничение по времени:</span>
-                    <span class="badge badge-primary">
-                      {format_time_limit(assigns.problem.time_limit_ms)}
-                    </span>
+                    <div class="flex flex-wrap gap-6 text-sm">
+                      <div class="flex items-center gap-2">
+                        <span class="font-semibold">Ограничение по времени:</span>
+                        <span class="badge badge-primary">
+                          {format_time_limit(assigns.problem.time_limit_ms)}
+                        </span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="font-semibold">Ограничение по памяти:</span>
+                        <span class="badge badge-secondary">
+                          {format_memory_limit(assigns.problem.memory_limit_kb)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <span class="font-semibold">Ограничение по памяти:</span>
-                    <span class="badge badge-secondary">
-                      {format_memory_limit(assigns.problem.memory_limit_kb)}
-                    </span>
+                </div>
+
+                <div class="card bg-base-200 shadow-xl">
+                  <div class="card-body">
+                    <div class="problem-statement" , id="problem-statement" , phx-hook="MathJaxHook">
+                      {raw(@statement_html)}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div class="card bg-base-200 shadow-xl">
-              <div class="card-body">
-                <div class="problem-statement" , id="problem-statement" , phx-hook="MathJaxHook">
-                  {raw(@statement_html)}
+              <div class="card bg-base-200 shadow-xl">
+                <div class="card-body p-4">
+                  <%= sidebar_timer(assigns) %>
+                  <%= sidebar_problem_list(assigns) %>
+                  <%= sidebar_duel(assigns) %>
+                  <%= sidebar_submit_button(assigns) %>
+                  <%= sidebar_previous_submissions(assigns) %>
                 </div>
               </div>
             </div>
@@ -109,51 +121,125 @@ defmodule CodeDuelsWeb.ProblemLive do
     end
   end
 
-  defp clean_problem_html(html) when is_binary(html) do
-    doc = Floki.parse_document!(html)
-
-    doc = Floki.filter_out(doc, "[class~='header']")
-
-    cleaned_doc =
-      Floki.traverse_and_update(doc, fn
-        {"pre", attrs, children} = node ->
-          if Enum.any?(attrs, fn {k, v} -> k == "class" && String.contains?(v, "content") end) do
-            clean_text = extract_pre_content(attrs, children)
-            {"pre", attrs, [clean_text]}
-          else
-            node
-          end
-
-        other ->
-          other
-      end)
-
-    Floki.raw_html(cleaned_doc, encode: false)
+  defp sidebar_timer(assigns) do
+    ~H"""
+    <div class="card bg-base-200 shadow-xl mt-4">
+      <div class="card-body p-4 flex flex-col items-center">
+        <span class="font-semibold text-center">Время до завершения раунда</span>
+        <span
+          id="active-timer"
+          class="mt-1 badge badge-primary text-sm"
+          phx-hook="CountdownHook"
+          data-unlock={@unlock_ts}
+          data-end={@end_ts}
+        >
+          {@time_remaining}
+        </span>
+      </div>
+    </div>
+    """
   end
 
-  defp extract_pre_content(attrs, children) do
-    case Enum.find_value(attrs, fn
-           {"data-content", v} -> v
-           _ -> nil
-         end) do
-      nil ->
-        test_lines = Floki.find(children, "[class*='test-example-line']")
+  defp sidebar_problem_list(assigns) do
+    ~H"""
+    <div class="card bg-base-200 shadow-xl">
+      <div class="card-body p-4">
+        <h3 class="font-semibold mb-2 text-center">Задачи раунда</h3>
+        <div class="space-y-1">
+          <%= for problem <- @problems do %>
+            <.link
+              navigate={"/#{@tournament_id}/#{@round_number}/problem?letter=#{problem.letter}"}
+              class={[
+                "block px-3 py-2 rounded-lg transition-colors",
+                if(problem.letter == @problem_letter,
+                  do: "bg-secondary text-secondary-content",
+                  else: "hover:bg-base-300"
+                )
+              ]}
+            >
+              <span class="font-semibold">{problem.letter}</span> — {problem.title}
+            </.link>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    """
+  end
 
-        if test_lines != [] do
-          test_lines
-          |> Enum.map(&Floki.text/1)
-          |> Enum.join("\n")
-        else
-          Floki.text(children)
-        end
+  defp sidebar_duel(assigns) do
+    ~H"""
+    <%= if @duel_a_name do %>
+      <div class="card bg-base-200 shadow-xl mt-4">
+        <div class="card-body p-4">
+          <div class="text-center mb-2">
+            <span class={["font-semibold text-blue-500", if(@duel_is_user_a, do: "bg-yellow-500/10 px-1 rounded")]}>
+              {@duel_a_name}
+            </span>
+            <span class="opacity-50 mx-1">vs</span>
+            <span class={["font-semibold text-red-500", if(!@duel_is_user_a, do: "bg-yellow-500/10 px-1 rounded")]}>
+              {@duel_b_name}
+            </span>
+          </div>
+          <hr class="opacity-20 my-2">
+          <div class="space-y-1">
+            <div class="flex justify-between text-sm">
+              <span class="font-semibold">Счёт</span>
+              <span class="font-bold">{@duel_a_score} — {@duel_b_score}</span>
+            </div>
+            <%= for dp <- @duel_problems do %>
+              <div class="flex justify-between text-sm">
+                <span class="font-semibold">Задача {dp.letter}</span>
+                <span class={duel_problem_class(dp.winner)}>{dp.points}</span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+    """
+  end
 
-      text ->
-        # Escape HTML special characters to avoid injection
-        text
-        |> String.replace("&", "&amp;")
-        |> String.replace("<", "&lt;")
-        |> String.replace(">", "&gt;")
-    end
+  defp sidebar_submit_button(assigns) do
+    ~H"""
+    <.link
+      navigate={"/#{@tournament_id}/#{@round_number}/submit?letter=#{@problem_letter}"}
+      class="btn btn-secondary btn-block mt-4"
+    >
+      <span class="font-semibold text-center">Отправить решение</span>
+    </.link>
+    """
+  end
+
+  defp sidebar_previous_submissions(assigns) do
+    ~H"""
+    <%= if @submissions != [] do %>
+      <div class="card bg-base-200 shadow-xl">
+        <div class="card-body p-4">
+          <span class="font-semibold text-center">Предыдущие попытки</span>
+          <table class="table table-zebra w-auto">
+            <%= for sub<- @submissions do %>
+              <tr class="hover">
+                <td class="text-center w-20">{sub.language}</td>
+                <td class={submission_status_class(sub.status)}>{sub.status}</td>
+                <td class="text-center text-sm opacity-70 w-32">
+                  {format_datetime(sub.inserted_at)}
+                </td>
+              </tr>
+            <% end %>
+          </table>
+        </div>
+      </div>
+    <% end %>
+    """
+  end
+
+  defp clean_problem_html(html) when is_binary(html) do
+    doc =
+      Floki.parse_document!(html)
+      |> Floki.filter_out("[class~='header']")
+      |> Floki.filter_out("link")
+
+    Floki.raw_html(doc, encode: false)
   end
 
   def mount(
@@ -183,12 +269,24 @@ defmodule CodeDuelsWeb.ProblemLive do
 
     problem = if problem_id, do: CodeDuels.Problems.get_problem!(problem_id), else: nil
 
+    problemset = if round, do: CodeDuels.Tournaments.get_problemset(round.problemset), else: []
+
+    problems =
+      problemset
+      |> Enum.map_reduce(?A, fn problem, acc ->
+        {%{
+           id: problem.id,
+           title: problem.title,
+           letter: <<acc>>
+         }, acc + 1}
+      end)
+      |> elem(0)
+
     statement_html =
       with problem when not is_nil(problem) <- problem,
            path when is_binary(path) <- problem.statement,
            true <- File.exists?(path),
            {:ok, content} <- File.read(path) do
-        # Clean the HTML (remove header, fix <pre> blocks) – no CSS injection
         clean_problem_html(content)
       else
         _ -> nil
@@ -196,9 +294,109 @@ defmodule CodeDuelsWeb.ProblemLive do
 
     is_admin = socket.assigns[:current_user] && socket.assigns[:current_user].is_admin
     now = DateTime.utc_now()
-    round_unlock_time = calculate_round_unlock_time(tournament, round_num, round)
+    round_unlock_time = CodeDuels.Tournaments.round_unlock_time(tournament, round_num)
+
+    round_end_time =
+      if round_unlock_time,
+        do: DateTime.add(round_unlock_time, tournament.round_time, :second),
+        else: nil
+
     time_based_locked = round_unlock_time && DateTime.compare(now, round_unlock_time) == :lt
     locked = time_based_locked && !is_admin
+
+    time_remaining = calculate_time_remaining(now, round_end_time, round_unlock_time)
+
+    unlock_ts = round_unlock_time && DateTime.to_unix(round_unlock_time)
+    end_ts = round_end_time && DateTime.to_unix(round_end_time)
+
+    submissions =
+      CodeDuels.Tournaments.get_all_user_submissions(
+        socket.assigns.current_user.id,
+        round.id,
+        letter
+      )
+
+    {duel_a_name, duel_b_name, duel_is_user_a, duel_a_score, duel_b_score, duel_problems} =
+      if socket.assigns[:current_user] && round do
+        duel =
+          CodeDuels.Tournaments.get_duel_for_user(
+            tournament_id,
+            round_num,
+            socket.assigns[:current_user].id
+          )
+
+        if duel do
+          is_player_a = duel.player_a.user_id == socket.assigns[:current_user].id
+
+          a_name = duel.player_a.user.username || duel.player_a.user.name || "Player A"
+          b_name = duel.player_b.user.username || duel.player_b.user.name || "Player B"
+
+          ppr = tournament.problems_per_round || 3
+          start_idx = (round_num - 1) * ppr
+
+          problem_points =
+            if tournament.scores,
+              do: Enum.slice(tournament.scores, start_idx, ppr),
+              else: List.duplicate(1, ppr)
+
+          problem_ids = problemset |> Enum.map(& &1.id)
+
+          subs_data =
+            CodeDuels.Tournaments.get_submissions_for_participants(
+              [duel.player_a.user_id, duel.player_b.user_id],
+              round.id,
+              problem_ids
+            )
+
+          a_subs = Map.get(subs_data, duel.player_a.user_id, %{})
+          b_subs = Map.get(subs_data, duel.player_b.user_id, %{})
+
+          problems_info =
+            problems
+            |> Enum.zip(problem_points)
+            |> Enum.map(fn {p, pts} ->
+              a_data = Map.get(a_subs, p.id, %{status: "none", time: nil})
+              b_data = Map.get(b_subs, p.id, %{status: "none", time: nil})
+
+              winner =
+                cond do
+                  a_data.status == "solved" && b_data.status != "solved" ->
+                    :player_a
+
+                  b_data.status == "solved" && a_data.status != "solved" ->
+                    :player_b
+
+                  a_data.status == "solved" && b_data.status == "solved" ->
+                    if DateTime.compare(a_data.time, b_data.time) == :lt,
+                      do: :player_a,
+                      else: :player_b
+
+                  true ->
+                    :none
+                end
+
+              %{
+                letter: p.letter,
+                points: pts,
+                winner: winner
+              }
+            end)
+
+          a_score =
+            problems_info
+            |> Enum.filter(&(&1.winner == :player_a))
+            |> Enum.map(& &1.points)
+            |> Enum.sum()
+
+          b_score =
+            problems_info
+            |> Enum.filter(&(&1.winner == :player_b))
+            |> Enum.map(& &1.points)
+            |> Enum.sum()
+
+          {a_name, b_name, is_player_a, a_score, b_score, problems_info}
+        end
+      end || {nil, nil, false, 0, 0, []}
 
     {:ok,
      assign(socket, %{
@@ -207,11 +405,23 @@ defmodule CodeDuelsWeb.ProblemLive do
        round_number: round_num,
        round: round,
        problem: problem,
+       problems: problems,
        problem_letter: String.upcase(problem_letter),
        statement_html: statement_html,
        locked: locked,
        round_unlock_time: round_unlock_time,
-       now: now
+       round_end_time: round_end_time,
+       now: now,
+       time_remaining: time_remaining,
+       unlock_ts: unlock_ts,
+       end_ts: end_ts,
+       submissions: submissions,
+        duel_a_name: duel_a_name,
+        duel_b_name: duel_b_name,
+        duel_is_user_a: duel_is_user_a,
+        duel_a_score: duel_a_score,
+        duel_b_score: duel_b_score,
+        duel_problems: duel_problems
      })}
   end
 
@@ -220,29 +430,6 @@ defmodule CodeDuelsWeb.ProblemLive do
       c when c >= ?A and c <= ?Z -> c - ?A
       _ -> -1
     end
-  end
-
-  defp calculate_round_unlock_time(tournament, round_num, round) do
-    if round && round.start_time && tournament.start_time do
-      combine_datetime_with_time(tournament.start_time, round.start_time)
-    else
-      if tournament.start_time do
-        offset_seconds =
-          (round_num - 1) * (tournament.round_time || 0) +
-            (round_num - 1) * (tournament.intermission_time || 0)
-
-        DateTime.add(tournament.start_time, offset_seconds, :second)
-      else
-        nil
-      end
-    end
-  end
-
-  defp combine_datetime_with_time(datetime, time) do
-    %{year: y, month: m, day: d} = datetime
-    %{hour: h, minute: min, second: s} = time
-    {:ok, dt} = NaiveDateTime.new(y, m, d, h, min, s)
-    DateTime.from_naive!(dt, "Etc/UTC")
   end
 
   defp format_time(seconds) when seconds < 60, do: "#{seconds} сек"
@@ -265,4 +452,47 @@ defmodule CodeDuelsWeb.ProblemLive do
       "#{kb} КБ"
     end
   end
+
+  defp calculate_time_remaining(now, round_end_time, round_unlock_time) do
+    cond do
+      round_unlock_time == nil ->
+        ""
+
+      DateTime.compare(now, round_unlock_time) == :lt ->
+        diff = DateTime.diff(round_unlock_time, now)
+        "До начала #{format_time(diff)}"
+
+      round_end_time && DateTime.compare(now, round_end_time) == :lt ->
+        diff = DateTime.diff(round_end_time, now)
+        format_time(diff)
+
+      round_end_time && DateTime.compare(now, round_end_time) == :gt ->
+        "Завершён"
+
+      true ->
+        "0 сек"
+    end
+  end
+
+  defp format_datetime(%DateTime{} = dt) do
+    dt
+    |> DateTime.to_naive()
+    |> NaiveDateTime.to_string()
+    |> String.slice(0, 16)
+  end
+
+  defp submission_status_class(status) do
+    case status do
+      "accepted" -> "text-center font-bold text-green-600"
+      "solved" -> "text-center font-bold text-green-600"
+      "rejected" -> "text-center font-bold text-red-600"
+      "wrong" -> "text-center font-bold text-red-600"
+      "pending" -> "text-center font-bold text-yellow-600"
+      _ -> "text-center"
+    end
+  end
+
+  defp duel_problem_class(:player_a), do: "font-bold text-blue-500"
+  defp duel_problem_class(:player_b), do: "font-bold text-red-500"
+  defp duel_problem_class(_), do: ""
 end

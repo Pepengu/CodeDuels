@@ -43,6 +43,18 @@ defmodule CodeDuels.Tournaments do
 
   def get_round!(id), do: Repo.get!(Round, id)
 
+  def round_unlock_time(tournament, round_number) do
+    if tournament.start_time do
+      offset_seconds =
+        (round_number - 1) * (tournament.round_time || 0) +
+          (round_number - 1) * (tournament.intermission_time || 0)
+
+      DateTime.add(tournament.start_time, offset_seconds, :second)
+    else
+      nil
+    end
+  end
+
   def create_submission(attrs \\ %{}) do
     %Submission{}
     |> Submission.changeset(attrs)
@@ -150,6 +162,19 @@ defmodule CodeDuels.Tournaments do
     Repo.all(
       from s in Submission,
         where: s.user_id == ^user_id and s.round_id == ^round_id,
+        order_by: [desc: s.inserted_at],
+        preload: [:problem]
+    )
+  end
+
+  def get_all_user_submissions(user_id, round_id, problem_letter) do
+    Repo.all(
+      from s in Submission,
+        join: p in assoc(s, :problem),
+        where:
+          s.user_id == ^user_id and
+            s.round_id == ^round_id and
+            s.problem_letter == ^problem_letter,
         order_by: [desc: s.inserted_at],
         preload: [:problem]
     )
@@ -309,7 +334,7 @@ defmodule CodeDuels.Tournaments do
     {Enum.reverse(acc), [p1]}
   end
 
-  defp pair_within_group_inner(participants, acc, previous_pairings, attempts)
+  defp pair_within_group_inner(participants, acc, _previous_pairings, attempts)
        when attempts > 100 do
     {Enum.reverse(acc), participants}
   end
