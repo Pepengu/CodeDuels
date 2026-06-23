@@ -36,6 +36,8 @@ defmodule CodeDuelsWeb.Router do
       live "/:tournament_id/:round_number/problem", ProblemLive, :show
       live "/:tournament_id/:round_number/submit", SubmitLive, :show
     end
+
+    get "/:tournament_id/:round_number/:filename", ProblemFileController, :serve_statement_file
   end
 
   if Application.compile_env(:code_duels, :dev_routes) do
