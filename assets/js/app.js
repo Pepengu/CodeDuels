@@ -30,17 +30,135 @@ let Hooks = {}
 Hooks.MathJaxHook = {
   mounted() {
     this.renderMath()
+    this.addCopyButtons()
+    this.syncTestLines()
   },
   updated() {
     this.renderMath()
+    this.addCopyButtons()
+    this.syncTestLines()
   },
   renderMath() {
     if (window.MathJax && window.MathJax.Hub) {
-      // V2 uses the Hub.Queue system
       window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, this.el]);
     } else {
       setTimeout(() => this.renderMath(), 100);
     }
+  },
+  addCopyButtons() {
+    this.el.querySelectorAll(".input, .output").forEach(el => {
+      if (el.querySelector(".copy-sample-btn")) return
+
+      const title = el.querySelector(".title")
+      if (!title) return
+
+      const btn = document.createElement("button")
+      btn.className = "copy-sample-btn"
+      btn.setAttribute("aria-label", "Копировать")
+
+      const icon = document.createElement("span")
+      icon.className = "hero-clipboard-document-mini"
+
+      btn.appendChild(icon)
+      btn.addEventListener("click", () => {
+        const pre = el.querySelector("pre.content")
+        if (pre) {
+          navigator.clipboard.writeText(pre.textContent.trim())
+          icon.className = "hero-clipboard-document-check-mini"
+          setTimeout(() => icon.className = "hero-clipboard-document-mini", 2000)
+        }
+      })
+      title.appendChild(btn)
+    })
+  },
+  syncTestLines() {
+    this.el.querySelectorAll(".sample-test").forEach(sample => {
+      const inputs = sample.querySelectorAll(".input pre.content")
+      const outputs = sample.querySelectorAll(".output pre.content")
+      if (inputs.length === 0 || outputs.length === 0) return
+
+      const pairs = Math.min(inputs.length, outputs.length)
+      for (let i = 0; i < pairs; i++) {
+        const input = inputs[i]
+        const output = outputs[i]
+
+        const sync = (from, to) => {
+          from.querySelectorAll("[class*='test-example-line']").forEach(line => {
+            line.addEventListener("mouseenter", () => {
+              const cls = [...line.classList].find(c => /test-example-line-\d+/.test(c))
+              if (!cls) return
+              const toMatch = to.querySelectorAll(`.${CSS.escape(cls)}`)
+              if (toMatch.length === 0) return
+              from.querySelectorAll(`.${CSS.escape(cls)}`).forEach(l => l.classList.add("test-line-hover"))
+              toMatch.forEach(l => l.classList.add("test-line-hover"))
+            })
+            line.addEventListener("mouseleave", () => {
+              const cls = [...line.classList].find(c => /test-example-line-\d+/.test(c))
+              if (!cls) return
+              from.querySelectorAll(`.${CSS.escape(cls)}`).forEach(l => l.classList.remove("test-line-hover"))
+              to.querySelectorAll(`.${CSS.escape(cls)}`).forEach(l => l.classList.remove("test-line-hover"))
+            })
+          })
+        }
+
+        sync(input, output)
+        sync(output, input)
+      }
+    })
+  }
+}
+
+Hooks.LanguageSelectHook = {
+  mounted() {
+    const saved = localStorage.getItem("last_language")
+    if (saved && saved !== this.el.value) {
+      this.pushEvent("restore_language", {language: saved})
+    }
+    this.el.addEventListener("change", () => {
+      localStorage.setItem("last_language", this.el.value)
+    })
+  }
+}
+
+function formatTime(seconds) {
+  if (seconds < 60) return seconds + " сек"
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return m + " мин " + s + " сек"
+}
+
+Hooks.CountdownHook = {
+  mounted() {
+    this.update()
+    this.interval = setInterval(() => this.update(), 1000)
+  },
+  updated() {
+    this.update()
+  },
+  destroyed() {
+    clearInterval(this.interval)
+  },
+  update() {
+    const now = Math.floor(Date.now() / 1000)
+    const unlock = parseInt(this.el.dataset.unlock)
+    const end = parseInt(this.el.dataset.end)
+
+    if (isNaN(unlock) || isNaN(end)) {
+      this.el.textContent = ""
+      return
+    }
+
+    if (now < unlock) {
+      this.el.textContent = "До начала " + formatTime(unlock - now)
+      return
+    }
+
+    if (now < end) {
+      this.el.textContent = formatTime(end - now)
+      return
+    }
+
+    this.el.textContent = "Завершён"
   }
 }
 
