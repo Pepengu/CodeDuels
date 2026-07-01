@@ -1,0 +1,3 @@
+[submodule "lib/code_duels/runner/Docker"]
+	path = lib/code_duels/runner/Docker
+	url = https://github.com/Pepengu/Runner.git

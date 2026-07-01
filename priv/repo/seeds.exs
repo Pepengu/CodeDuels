@@ -41,23 +41,24 @@ import_problems_from_folders = fn ->
 
   case File.ls(base_path) do
     {:ok, folders} ->
-      Enum.each(folders, fn folder ->
+      folders
+      |> Enum.filter(&(File.dir?(Path.join(base_path, &1)) and String.match?(&1, ~r/^\d+$/)))
+      |> Enum.sort_by(&String.to_integer/1)
+      |> Enum.each(fn folder ->
         folder_path = Path.join(base_path, folder)
 
-        if File.dir?(folder_path) and String.match?(folder, ~r/^\d+$/) do
-          case Repo.get_by(Problem, files_path: folder_path) do
-            nil ->
-              case import_folder.(folder_path) do
-                {:ok, _problem} ->
-                  IO.puts("Imported problem: #{folder}")
+        case Repo.get_by(Problem, files_path: folder_path) do
+          nil ->
+            case import_folder.(folder_path) do
+              {:ok, _problem} ->
+                IO.puts("Imported problem: #{folder}")
 
-                {:error, reason} ->
-                  IO.puts("Failed to import problem #{folder}: #{inspect(reason)}")
-              end
+              {:error, reason} ->
+                IO.puts("Failed to import problem #{folder}: #{inspect(reason)}")
+            end
 
-            _problem ->
-              IO.puts("Problem #{folder} already exists, skipping")
-          end
+          _problem ->
+            IO.puts("Problem #{folder} already exists, skipping")
         end
       end)
 

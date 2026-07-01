@@ -18,6 +18,9 @@ config :code_duels,
   ecto_repos: [CodeDuels.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+config :code_duels, :runner,
+  adapter: CodeDuels.Runner.Docker
+
 # Configures the endpoint
 config :code_duels, CodeDuelsWeb.Endpoint,
   url: [host: "localhost"],

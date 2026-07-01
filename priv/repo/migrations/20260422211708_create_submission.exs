@@ -8,7 +8,7 @@ defmodule CodeDuels.Repo.Migrations.CreateSubmission do
       add :problem_id, references(:problems)
 
       add :language, :string, null: false
-      add :code, :string, null: false
+      add :code, :text, null: false
       add :status, :string, default: "pending", null: false
       add :problem_letter, :string, null: false
 
