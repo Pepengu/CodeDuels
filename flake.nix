@@ -35,11 +35,6 @@
             # Copy project to a writable temporary directory
             TMP_DIR=\$(mktemp -d)
             cp -r $out/project/* \$TMP_DIR/
-            # Copy the built release from the original project directory
-            if [ -d "/home/daniil/Documents/elixir/code-duels/_build" ]; then
-              mkdir -p \$TMP_DIR/_build
-              cp -r /home/daniil/Documents/elixir/code-duels/_build/prod \$TMP_DIR/_build/
-            fi
             cd \$TMP_DIR
 
             echo "Portfolio Phoenix Application"
@@ -76,9 +71,9 @@
 
             export PHX_SERVER=true
             export MIX_ENV=prod
-            export SECRET_KEY_BASE="''${SECRET_KEY_BASE:-\"REPLACED_IN_CLEANUP\"}"
-            export LIVEVIEW_SIGNING_SALT="''${LIVEVIEW_SIGNING_SALT:-\"REPLACED_IN_CLEANUP\"}"
-            export DATABASE_URL="''${DATABASE_URL:-\"ecto://postgres:postgres@localhost/code-duels_prod\"}"
+            export SECRET_KEY_BASE="''${SECRET_KEY_BASE:?SECRET_KEY_BASE is required}"
+            export LIVEVIEW_SIGNING_SALT="''${LIVEVIEW_SIGNING_SALT:?LIVEVIEW_SIGNING_SALT is required}"
+            export DATABASE_URL="''${DATABASE_URL:?DATABASE_URL is required}"
             export PHX_HOST="''${PHX_HOST:-\"localhost\"}"
             export PORT="''${PORT:-\"4000\"}"
 
@@ -106,7 +101,7 @@
 
             echo ""
             echo "🚀 Phoenix server starting on http://\$PHX_HOST:\$PORT"
-            echo "📊 Admin login: admin / REPLACED_IN_CLEANUP"
+            echo "📊 Admin login: admin (\$ADMIN_USERNAME / \$ADMIN_PASSWORD)"
             echo "📁 Data stored in: \$HOME/.code-duels-data"
             echo "🛑 Press Ctrl+C to stop"
             echo ""
