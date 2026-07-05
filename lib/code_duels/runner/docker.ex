@@ -1,9 +1,8 @@
-
 defmodule CodeDuels.Runner.Docker do
   @behaviour CodeDuels.Runner
-  
+
   @impl true
-  def languages() do 
+  def languages() do
     [
       "gnu_cpp17",
       "gnu_cpp23",
@@ -11,7 +10,7 @@ defmodule CodeDuels.Runner.Docker do
       "python",
       "pypy",
       "java",
-      "go",
+      "go"
     ]
   end
 
@@ -48,21 +47,36 @@ defmodule CodeDuels.Runner.Docker do
 
   @impl true
   def submit_code(source_code, language, problem_id, _opts \\ []) do
-    problem = CodeDuels.Problems.get_problem!(problem_id)
+    try do
+      problem = CodeDuels.Problems.get_problem!(problem_id)
 
-    config = %{language: language, time_limit_ms: problem.time_limit_ms, source: source_code} |>
-                Jason.encode!()
+      config =
+        %{language: language, time_limit_ms: problem.time_limit_ms, source: source_code}
+        |> Jason.encode!()
 
-    {json, _exit_code} = System.cmd("docker", [
-        "run", "--rm",
-        "--network=none", "--memory=#{problem.memory_limit_kb}k", "--cpus=1",
-        "--pids-limit=100", "--cap-drop=ALL", "--security-opt=no-new-privileges",
-        "--tmpfs", "/tmp:rw,exec,nosuid,size=64m",
-        "-v", "#{problem.files_path}/tests:/code/tests:ro",
-        "-v", "#{problem.checker}:/code/checker.cpp:ro",
-        "code-duels-runner", config
-    ])
+      {json, _exit_code} =
+        System.cmd("docker", [
+          "run",
+          "--rm",
+          "--network=none",
+          "--memory=#{problem.memory_limit_kb}k",
+          "--cpus=1",
+          "--pids-limit=100",
+          "--cap-drop=ALL",
+          "--security-opt=no-new-privileges",
+          "--tmpfs",
+          "/tmp:rw,exec,nosuid,size=64m",
+          "-v",
+          "#{problem.files_path}/tests:/code/tests:ro",
+          "-v",
+          "#{problem.checker}:/code/checker.cpp:ro",
+          "code-duels-runner",
+          config
+        ])
 
-    json |> Jason.decode!() |> decode_runner_result()
+      {:ok, Jason.decode!(json) |> decode_runner_result()}
+    rescue
+      e -> {:error, "Docker failed: #{Exception.message(e)}"}
+    end
   end
 end

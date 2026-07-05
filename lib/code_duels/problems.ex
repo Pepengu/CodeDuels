@@ -11,14 +11,14 @@ defmodule CodeDuels.Problems do
   def get_problem!(id), do: Repo.get!(Problem, id)
 
   def get_tests(problem) do
-    Path.join(problem.files_path, "tests/*") |>
-      Path.wildcard() |>
-      Enum.reject(&(Path.extname(&1) == ".a")) |>
-      Enum.map(fn elem -> 
-        %{
-          test: File.read!(elem),
-          ans: File.read!(elem <> ".a"),
-        }
-      end)  
+    Path.join(problem.files_path, "tests/*")
+    |> Path.wildcard()
+    |> Enum.reject(&(Path.extname(&1) == ".a"))
+    |> Enum.map(fn elem ->
+      %{
+        test: File.read!(elem),
+        ans: File.read!(elem <> ".a")
+      }
+    end)
   end
 end

@@ -13,6 +13,7 @@ defmodule CodeDuels.Application do
       {DNSCluster, query: Application.get_env(:code_duels, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: CodeDuels.PubSub},
       CodeDuels.Tournaments.TournamentScheduler,
+      {Task.Supervisor, name: CodeDuels.SubmissionTaskSupervisor},
       # Start a worker by calling: CodeDuels.Worker.start_link(arg)
       # {CodeDuels.Worker, arg},
       # Start to serve requests, typically the last entry

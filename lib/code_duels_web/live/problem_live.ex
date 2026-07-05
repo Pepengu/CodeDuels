@@ -107,11 +107,11 @@ defmodule CodeDuelsWeb.ProblemLive do
               </div>
               <div class="card bg-base-200 shadow-xl">
                 <div class="card-body p-4">
-                  <%= sidebar_timer(assigns) %>
-                  <%= sidebar_problem_list(assigns) %>
-                  <%= sidebar_duel(assigns) %>
-                  <%= sidebar_submit_button(assigns) %>
-                  <%= sidebar_previous_submissions(assigns) %>
+                  {sidebar_timer(assigns)}
+                  {sidebar_problem_list(assigns)}
+                  {sidebar_duel(assigns)}
+                  {sidebar_submit_button(assigns)}
+                  {sidebar_previous_submissions(assigns)}
                 </div>
               </div>
             </div>
@@ -172,15 +172,21 @@ defmodule CodeDuelsWeb.ProblemLive do
       <div class="card bg-base-200 shadow-xl mt-4">
         <div class="card-body p-4">
           <div class="text-center mb-2">
-            <span class={["font-semibold text-blue-500", if(@duel_is_user_a, do: "bg-yellow-500/10 px-1 rounded")]}>
+            <span class={[
+              "font-semibold text-blue-500",
+              if(@duel_is_user_a, do: "bg-yellow-500/10 px-1 rounded")
+            ]}>
               {@duel_a_name}
             </span>
             <span class="opacity-50 mx-1">vs</span>
-            <span class={["font-semibold text-red-500", if(!@duel_is_user_a, do: "bg-yellow-500/10 px-1 rounded")]}>
+            <span class={[
+              "font-semibold text-red-500",
+              if(!@duel_is_user_a, do: "bg-yellow-500/10 px-1 rounded")
+            ]}>
               {@duel_b_name}
             </span>
           </div>
-          <hr class="opacity-20 my-2">
+          <hr class="opacity-20 my-2" />
           <div class="space-y-1">
             <div class="flex justify-between text-sm">
               <span class="font-semibold">Счёт</span>
@@ -416,12 +422,12 @@ defmodule CodeDuelsWeb.ProblemLive do
        unlock_ts: unlock_ts,
        end_ts: end_ts,
        submissions: submissions,
-        duel_a_name: duel_a_name,
-        duel_b_name: duel_b_name,
-        duel_is_user_a: duel_is_user_a,
-        duel_a_score: duel_a_score,
-        duel_b_score: duel_b_score,
-        duel_problems: duel_problems
+       duel_a_name: duel_a_name,
+       duel_b_name: duel_b_name,
+       duel_is_user_a: duel_is_user_a,
+       duel_a_score: duel_a_score,
+       duel_b_score: duel_b_score,
+       duel_problems: duel_problems
      })}
   end
 
