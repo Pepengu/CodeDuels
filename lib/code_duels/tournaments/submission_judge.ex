@@ -13,52 +13,60 @@ defmodule CodeDuels.Tournaments.SubmissionJudge do
 
   @adapter Application.compile_env(:code_duels, :runner)[:adapter]
 
-  @spec judge(attrs()) :: {:ok, pid()}
+  @spec judge(attrs()) :: {:ok, %Submission{}} | {:error, Ecto.Changeset.t()}
   def judge(attrs) do
-    submission = Submission.create_changeset(attrs) |> CodeDuels.Repo.insert!()
-    CodeDuelsWeb.Endpoint.broadcast!("submission:#{submission.id}", "pending", %{})
+    with {:ok, submission} <- Submission.create_changeset(attrs) |> CodeDuels.Repo.insert() do
+      CodeDuelsWeb.Endpoint.broadcast!("submission:#{submission.id}", "pending", %{})
 
-    Task.Supervisor.async_nolink(CodeDuels.SubmissionTaskSupervisor, fn ->
-      submission =
-        Submission.changeset(submission, %{status: :testing}) |> CodeDuels.Repo.update!()
+      Task.Supervisor.start_child(CodeDuels.SubmissionTaskSupervisor, fn ->
+        submission =
+          Submission.changeset(submission, %{status: :testing}) |> CodeDuels.Repo.update!()
 
-      CodeDuelsWeb.Endpoint.broadcast!("submission:#{submission.id}", "testing", %{})
+        CodeDuelsWeb.Endpoint.broadcast!("submission:#{submission.id}", "testing", %{})
 
-      case @adapter.submit_code(attrs.code, attrs.language, attrs.problem_id) do
-        {:ok, result} ->
-          submission =
-            Submission.changeset(submission, %{
-              status: :done,
-              verdict: result.verdict,
-              message: result.message
+        case @adapter.submit_code(attrs.code, attrs.language, attrs.problem_id) do
+          {:ok, result} ->
+            submission =
+              Submission.changeset(submission, %{
+                status: :done,
+                verdict: result.verdict,
+                message: result.message
+              })
+              |> CodeDuels.Repo.update!()
+
+            Enum.each(result.test_cases, fn tc ->
+              CodeDuels.Repo.insert!(
+                %TestResult{
+                  submission_id: submission.id,
+                  test: tc.test,
+                  verdict: tc.verdict,
+                  time_ms: tc.time_ms,
+                  exit_code: tc.exit_code
+                }
+              )
+            end)
+
+            Phoenix.PubSub.broadcast(CodeDuels.PubSub, "submission:#{submission.id}", %{
+              event: "done",
+              payload: result
             })
-            |> CodeDuels.Repo.update!()
 
-          Enum.each(result.test_cases, fn tc -> 
-            CodeDuels.Repo.insert!(
-              %TestResult{
-                submission_id: submission.id,
-                test: tc.test,
-                verdict: tc.verdict,
-                time_ms: tc.time_ms,
-                exit_code: tc.exit_code,
-              }
-            )
-          end)
+          {:error, message} ->
+            submission =
+              Submission.changeset(submission, %{
+                status: :failed,
+                message: message
+              })
+              |> CodeDuels.Repo.update!()
 
-          Phoenix.PubSub.broadcast(CodeDuels.PubSub, "submission:#{submission.id}", %{event: "done", payload: result})
-        {:error, message} ->
-          submission =
-            Submission.changeset(submission, %{
-              status: :failed,
-              message: message
+            Phoenix.PubSub.broadcast(CodeDuels.PubSub, "submission:#{submission.id}", %{
+              event: "failed",
+              payload: message
             })
-            |> CodeDuels.Repo.update!()
+        end
+      end)
 
-          Phoenix.PubSub.broadcast(CodeDuels.PubSub, "submission:#{submission.id}", %{event: "failed", payload: message})
-      end
-    end)
-
-    {:ok, submission}
+      {:ok, submission}
+    end
   end
 end

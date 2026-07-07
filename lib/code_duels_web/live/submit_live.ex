@@ -78,8 +78,7 @@ defmodule CodeDuelsWeb.SubmitLive do
                      white-space: pre-line;
                      #{error_style(@error)}"
                   }
-                >
-                  {error_message(@error)}
+                >{error_message(@error)}
                 </div>
                 <button
                   type="button"
@@ -169,6 +168,20 @@ defmodule CodeDuelsWeb.SubmitLive do
 
     problemset = CodeDuels.Tournaments.get_problemset(round.problemset)
 
+    duel = CodeDuels.Tournaments.get_duel_for_user(tournament_id, round_num, socket.assigns[:current_user].id)
+
+    participant_id = if duel do
+      current_user_id = socket.assigns[:current_user].id
+
+      if duel.player_a.user_id == current_user_id do
+        CodeDuelsWeb.Endpoint.subscribe("opponent:#{duel.player_b_id}")
+        duel.player_a_id
+      else
+        CodeDuelsWeb.Endpoint.subscribe("opponent:#{duel.player_a_id}")
+        duel.player_b_id
+      end
+    end
+
     {problems, _} =
       problemset
       |> Enum.map_reduce(?A, fn problem, acc ->
@@ -237,7 +250,8 @@ defmodule CodeDuelsWeb.SubmitLive do
        time_remaining: time_remaining,
        languages: @languages,
        form: form,
-       error: :none
+       error: :none,
+       participant_id: participant_id
      })}
   end
 
@@ -276,9 +290,10 @@ defmodule CodeDuelsWeb.SubmitLive do
     end
   end
 
+
   def handle_event("submit", %{"submission" => params}, socket) do
     current_user = socket.assigns.current_user
-    %{tournament_id: tournament_id, round_id: round_id, problems: problems} = socket.assigns
+    %{tournament_id: _tournament_id, round_id: round_id, problems: problems} = socket.assigns
 
     problem_id = String.to_integer(params["problem_id"])
     # Find the problem letter from the loaded problems list
@@ -294,19 +309,20 @@ defmodule CodeDuelsWeb.SubmitLive do
       code: params["code"]
     }
 
-    case CodeDuels.Tournaments.create_submission(attrs) do
-      {:ok, _submission} ->
-        socket =
-          socket
-          |> put_flash(:success, "Решение отправлено!")
-          |> push_navigate(to: "/#{tournament_id}/#{socket.assigns.round_number}")
-
+    case CodeDuels.Tournaments.SubmissionJudge.judge(attrs) do
+      {:ok, _sub} ->
         {:noreply, assign(socket, error: :success)}
 
       {:error, changeset} ->
         form = to_form(changeset, as: :submission)
         {:noreply, assign(socket, form: form)}
     end
+  end
+
+  def handle_info(%{event: event, payload: result}, socket) do
+    CodeDuelsWeb.Endpoint.broadcast!("opponent:#{socket.assigns.participant_id}", event, result)
+
+    {:noreply, socket}
   end
 
   def handle_info(:tick, socket) do
