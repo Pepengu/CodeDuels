@@ -15,7 +15,7 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
                 <tbody>
                   <tr>
                     <td class="font-semibold">Время старта</td>
-                    <td>{format_datetime(@tournament.start_time)}</td>
+                    <td>{format_datetime_msk(@tournament.start_time)}</td>
                   </tr>
                   <tr>
                     <td class="font-semibold">Раунды</td>
@@ -156,9 +156,9 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
     end
   end
 
-  defp format_datetime(nil), do: "Не задано"
+  defp format_datetime_msk(nil), do: "Не задано"
 
-  defp format_datetime(datetime) do
+  defp format_datetime_msk(datetime) do
     msk_time = DateTime.add(datetime, 3 * 3600, :second)
     Calendar.strftime(msk_time, "%Y-%m-%d %H:%M MSK")
   end

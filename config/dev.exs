@@ -23,7 +23,11 @@ config :code_duels, CodeDuelsWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: System.get_env("SECRET_KEY_BASE", "Au6XN182kKNMFse6DhDMotbZZndmsnQmRgXgdRGoe+lAe47DlT+u+KlJ9Kidj3MG"),
+  secret_key_base:
+    System.get_env(
+      "SECRET_KEY_BASE",
+      "Au6XN182kKNMFse6DhDMotbZZndmsnQmRgXgdRGoe+lAe47DlT+u+KlJ9Kidj3MG"
+    ),
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:code_duels, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:code_duels, ~w(--watch)]}
