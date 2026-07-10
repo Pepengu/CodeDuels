@@ -61,81 +61,21 @@ defmodule CodeDuelsWeb.SubmissionsLive do
         </div>
 
         <div class="flex gap-8 flex-wrap justify-center">
-          <div class="mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-center">Мои посылки</h2>
-            <div class="border border-base-300 rounded-lg p-4">
-              <div class="overflow-visible">
-                <table class="table table-zebra w-auto">
-                  <thead>
-                    <tr>
-                      <th class="text-center w-64">Задача</th>
-                      <th class="text-center w-20">Язык</th>
-                      <th class="text-center w-24">Статус</th>
-                      <th class="text-center w-32">Время</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <%= if @current_user_all_submissions == [] do %>
-                      <tr class="hover">
-                        <td colspan="4" class="text-center opacity-70 w-[308px]">Нет посылок</td>
-                      </tr>
-                    <% else %>
-                      <%= for sub <- @current_user_all_submissions do %>
-                        <tr class="hover">
-                          <td class="text-center font-medium w-64">
-                            {sub.problem_letter} — {sub.problem.title}
-                          </td>
-                          <td class="text-center w-20">{sub.language}</td>
-                          <td class={submission_status_class(sub.status)}>{sub.status}</td>
-                          <td class="text-center text-sm opacity-70 w-32">
-                            {format_datetime(sub.inserted_at)}
-                          </td>
-                        </tr>
-                      <% end %>
-                    <% end %>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          <.submissions_table
+            title="Мои посылки"
+            submissions={@current_user_all_submissions}
+            tournament_id={@tournament_id}
+            round_number={@round_number}
+            show_problem?
+          />
 
-          <div class="mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-center">Посылки соперника</h2>
-            <div class="border border-base-300 rounded-lg p-4">
-              <div class="overflow-visible">
-                <table class="table table-zebra w-auto">
-                  <thead>
-                    <tr>
-                      <th class="text-center w-64">Задача</th>
-                      <th class="text-center w-20">Язык</th>
-                      <th class="text-center w-24">Статус</th>
-                      <th class="text-center w-32">Время</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <%= if @opponent_all_submissions == [] do %>
-                      <tr class="hover">
-                        <td colspan="4" class="text-center opacity-70 w-[308px]">Нет посылок</td>
-                      </tr>
-                    <% else %>
-                      <%= for sub <- @opponent_all_submissions do %>
-                        <tr class="hover">
-                          <td class="text-center font-medium w-64">
-                            {sub.problem_letter} — {sub.problem.title}
-                          </td>
-                          <td class="text-center w-20">{sub.language}</td>
-                          <td class={submission_status_class(sub.status)}>{sub.status}</td>
-                          <td class="text-center text-sm opacity-70 w-32">
-                            {format_datetime(sub.inserted_at)}
-                          </td>
-                        </tr>
-                      <% end %>
-                    <% end %>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          <.submissions_table
+            title="Посылки соперника"
+            submissions={@opponent_all_submissions}
+            tournament_id={@tournament_id}
+            round_number={@round_number}
+            show_problem?
+          />
         </div>
 
         <%= if Enum.empty?(@player_submissions) do %>
@@ -381,24 +321,4 @@ defmodule CodeDuelsWeb.SubmissionsLive do
   end
 
   defp format_time(_), do: ""
-
-  defp submission_status_class(status) do
-    case status do
-      "accepted" -> "text-center font-bold text-green-600"
-      "solved" -> "text-center font-bold text-green-600"
-      "rejected" -> "text-center font-bold text-red-600"
-      "wrong" -> "text-center font-bold text-red-600"
-      "pending" -> "text-center font-bold text-yellow-600"
-      _ -> "text-center"
-    end
-  end
-
-  defp format_datetime(%DateTime{} = dt) do
-    dt
-    |> DateTime.to_naive()
-    |> NaiveDateTime.to_string()
-    |> String.slice(0, 16)
-  end
-
-  defp format_datetime(_), do: "-"
 end

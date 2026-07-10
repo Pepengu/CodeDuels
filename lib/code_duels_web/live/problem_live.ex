@@ -219,22 +219,13 @@ defmodule CodeDuelsWeb.ProblemLive do
   defp sidebar_previous_submissions(assigns) do
     ~H"""
     <%= if @submissions != [] do %>
-      <div class="card bg-base-200 shadow-xl">
-        <div class="card-body p-4">
-          <span class="font-semibold text-center">Предыдущие попытки</span>
-          <table class="table table-zebra w-auto">
-            <%= for sub<- @submissions do %>
-              <tr class="hover">
-                <td class="text-center w-20">{sub.language}</td>
-                <td class={submission_status_class(sub.status)}>{sub.status}</td>
-                <td class="text-center text-sm opacity-70 w-32">
-                  {format_datetime(sub.inserted_at)}
-                </td>
-              </tr>
-            <% end %>
-          </table>
-        </div>
-      </div>
+      <.submissions_table
+        title="Предыдущие попытки"
+        submissions={@submissions}
+        tournament_id={@tournament_id}
+        round_number={@round_number}
+        show_problem?={false}
+      />
     <% end %>
     """
   end
@@ -477,24 +468,6 @@ defmodule CodeDuelsWeb.ProblemLive do
 
       true ->
         "0 сек"
-    end
-  end
-
-  defp format_datetime(%DateTime{} = dt) do
-    dt
-    |> DateTime.to_naive()
-    |> NaiveDateTime.to_string()
-    |> String.slice(0, 16)
-  end
-
-  defp submission_status_class(status) do
-    case status do
-      "accepted" -> "text-center font-bold text-green-600"
-      "solved" -> "text-center font-bold text-green-600"
-      "rejected" -> "text-center font-bold text-red-600"
-      "wrong" -> "text-center font-bold text-red-600"
-      "pending" -> "text-center font-bold text-yellow-600"
-      _ -> "text-center"
     end
   end
 
