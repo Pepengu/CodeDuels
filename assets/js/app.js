@@ -212,6 +212,52 @@ Hooks.CodeBlock = {
   }
 }
 
+Hooks.CodeInput = {
+  mounted() {
+    this.textarea = this.el.querySelector('textarea')
+    this.code = this.el.querySelector('code')
+    this.pre = this.el.querySelector('pre')
+
+    this.textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        const start = this.textarea.selectionStart
+        const end = this.textarea.selectionEnd
+        const value = this.textarea.value
+        this.textarea.value = value.substring(0, start) + '\t' + value.substring(end)
+        this.textarea.selectionStart = this.textarea.selectionEnd = start + 1
+        this.textarea.dispatchEvent(new Event('input', { bubbles: true }))
+      }
+    })
+
+    this.textarea.addEventListener('input', () => this.highlight())
+
+    this.textarea.addEventListener('scroll', () => {
+      this.pre.scrollTop = this.textarea.scrollTop
+      this.pre.scrollLeft = this.textarea.scrollLeft
+    })
+
+    const langSelect = document.querySelector('[name="submission[language]"]')
+    if (langSelect) {
+      langSelect.addEventListener('change', () => this.highlight())
+    }
+
+    this.highlight()
+  },
+  updated() {
+    this.highlight()
+  },
+  highlight() {
+    const scrollTop = this.pre.scrollTop
+    const scrollLeft = this.pre.scrollLeft
+    delete this.code.dataset.highlighted
+    this.code.textContent = this.textarea.value
+    hljs.highlightElement(this.code)
+    this.pre.scrollTop = scrollTop
+    this.pre.scrollLeft = scrollLeft
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,

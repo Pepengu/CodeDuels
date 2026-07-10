@@ -64,6 +64,10 @@
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
+/* Code editor overlay — cancel hljs padding, sync scroll via JS */
+#code-editor pre { overflow: hidden; }
+#code-editor pre code.hljs { padding: 0; }
+
 /* Copy code button */
 .copy-code-btn {
   position: absolute;

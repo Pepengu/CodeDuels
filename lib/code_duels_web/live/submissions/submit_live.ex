@@ -3,14 +3,10 @@ defmodule CodeDuelsWeb.SubmitLive do
 
   alias CodeDuels.Tournaments.Submission
 
-  @languages [
-    {"C++", "cpp"},
-    {"Python", "py"},
-    {"Java", "java"},
-    {"JavaScript", "js"},
-    {"Go", "go"},
-    {"Rust", "rs"}
-  ]
+  @adapter Application.compile_env(:code_duels, :runner)[:adapter]
+
+  @languages @adapter.languages()
+             |> Enum.map(fn {internal, display} -> {display, to_string(internal)} end)
 
   def render(assigns) do
     ~H"""
@@ -54,17 +50,26 @@ defmodule CodeDuelsWeb.SubmitLive do
                 </div>
               </div>
 
-              <div class="form-control">
-                <label class="label">
-                  <span class="label-text font-semibold">Код решения</span>
-                </label>
-                <textarea
-                  id="submission_code"
-                  name="submission[code]"
-                  class="textarea textarea-bordered font-mono text-sm h-[500px] w-full"
-                  phx-no-curly-interpolation
-                  placeholder="Введите ваш код здесь..."
-                ><%= @form.params["code"] %></textarea>
+              <div class="card bg-base-200 shadow-xl">
+                <div class="card-body">
+                  <h2 class="card-title">Код решения</h2>
+                  <div
+                    id="code-editor"
+                    phx-hook="CodeInput"
+                    class="relative border border-base-300 rounded-lg"
+                    style="min-height:500px"
+                  >
+                    <textarea
+                      id="submission_code"
+                      name="submission[code]"
+                      class="absolute inset-0 w-full h-full bg-transparent text-transparent caret-primary font-mono text-sm leading-normal p-4 resize-none outline-none z-10"
+                      phx-no-curly-interpolation
+                      placeholder="Введите ваш код здесь..."
+                      spellcheck="false"
+                    ><%= @form.params["code"] %></textarea>
+                    <pre class="absolute inset-0 rounded-lg p-4 font-mono text-sm leading-normal pointer-events-none whitespace-pre-wrap bg-base-300"><code class={"language-#{@highlight_class}"}><%= @form.params["code"] %></code></pre>
+                  </div>
+                </div>
               </div>
 
               <div class="submission grid grid-cols-2 gap-4 items-center">
@@ -78,7 +83,8 @@ defmodule CodeDuelsWeb.SubmitLive do
                      white-space: pre-line;
                      #{error_style(@error)}"
                   }
-                >{error_message(@error)}
+                >
+                  {error_message(@error)}
                 </div>
                 <button
                   type="button"
@@ -129,6 +135,13 @@ defmodule CodeDuelsWeb.SubmitLive do
                 </ul>
               </div>
             </div>
+            <.submissions_table
+              title="Последние попытки"
+              submissions={@submissions}
+              tournament_id={@tournament_id}
+              round_number={@round_number}
+              show_problem?
+            />
           </div>
         </div>
       </div>
@@ -168,19 +181,25 @@ defmodule CodeDuelsWeb.SubmitLive do
 
     problemset = CodeDuels.Tournaments.get_problemset(round.problemset)
 
-    duel = CodeDuels.Tournaments.get_duel_for_user(tournament_id, round_num, socket.assigns[:current_user].id)
+    duel =
+      CodeDuels.Tournaments.get_duel_for_user(
+        tournament_id,
+        round_num,
+        socket.assigns[:current_user].id
+      )
 
-    participant_id = if duel do
-      current_user_id = socket.assigns[:current_user].id
+    participant_id =
+      if duel do
+        current_user_id = socket.assigns[:current_user].id
 
-      if duel.player_a.user_id == current_user_id do
-        CodeDuelsWeb.Endpoint.subscribe("opponent:#{duel.player_b_id}")
-        duel.player_a_id
-      else
-        CodeDuelsWeb.Endpoint.subscribe("opponent:#{duel.player_a_id}")
-        duel.player_b_id
+        if duel.player_a.user_id == current_user_id do
+          CodeDuelsWeb.Endpoint.subscribe("opponent:#{duel.player_b_id}")
+          duel.player_a_id
+        else
+          CodeDuelsWeb.Endpoint.subscribe("opponent:#{duel.player_a_id}")
+          duel.player_b_id
+        end
       end
-    end
 
     {problems, _} =
       problemset
@@ -233,6 +252,16 @@ defmodule CodeDuelsWeb.SubmitLive do
 
     schedule_timer()
 
+    submissions =
+      CodeDuels.Tournaments.get_last_n_user_submissions(
+        socket.assigns.current_user.id,
+        round.id,
+        3
+      )
+
+    language = form.params["language"]
+    highlight_class = if language && language != "", do: highlight_class(language), else: ""
+
     {:ok,
      assign(socket, %{
        tournament_id: tournament_id,
@@ -251,13 +280,17 @@ defmodule CodeDuelsWeb.SubmitLive do
        languages: @languages,
        form: form,
        error: :none,
-       participant_id: participant_id
+       participant_id: participant_id,
+       submissions: submissions,
+       highlight_class: highlight_class
      })}
   end
 
   def handle_event("validate", %{"submission" => params}, socket) do
     form = %{socket.assigns.form | params: params}
-    {:noreply, assign(socket, form: form)}
+    language = params["language"]
+    highlight_class = if language && language != "", do: highlight_class(language), else: ""
+    {:noreply, assign(socket, form: form, highlight_class: highlight_class)}
   end
 
   def handle_event("restore_language", %{"language" => lang}, socket) do
@@ -290,7 +323,6 @@ defmodule CodeDuelsWeb.SubmitLive do
     end
   end
 
-
   def handle_event("submit", %{"submission" => params}, socket) do
     current_user = socket.assigns.current_user
     %{tournament_id: _tournament_id, round_id: round_id, problems: problems} = socket.assigns
@@ -310,8 +342,10 @@ defmodule CodeDuelsWeb.SubmitLive do
     }
 
     case CodeDuels.Tournaments.SubmissionJudge.judge(attrs) do
-      {:ok, _sub} ->
-        {:noreply, assign(socket, error: :success)}
+      {:ok, sub} ->
+        Phoenix.PubSub.subscribe(CodeDuels.PubSub, "submission:#{sub.id}")
+        submissions = [sub | socket.assigns.submissions] |> Enum.take(3)
+        {:noreply, assign(socket, error: :success, submissions: submissions)}
 
       {:error, changeset} ->
         form = to_form(changeset, as: :submission)
@@ -319,11 +353,36 @@ defmodule CodeDuelsWeb.SubmitLive do
     end
   end
 
-  def handle_info(%{event: event, payload: result}, socket) do
-    CodeDuelsWeb.Endpoint.broadcast!("opponent:#{socket.assigns.participant_id}", event, result)
+  def handle_info(%{event: "done", payload: result}, socket) do
+    CodeDuelsWeb.Endpoint.broadcast!("opponent:#{socket.assigns.participant_id}", "done", result)
 
-    {:noreply, socket}
+    [latest | rest] = socket.assigns.submissions
+    passed = Enum.count(result[:test_cases] || [], &(&1[:verdict] == :accepted))
+
+    updated = %{
+      latest
+      | status: :done,
+        verdict: result[:verdict],
+        message: result[:message],
+        tests_passed: passed
+    }
+
+    {:noreply, assign(socket, submissions: [updated | rest])}
   end
+
+  def handle_info(%{event: "failed", payload: message}, socket) do
+    CodeDuelsWeb.Endpoint.broadcast!("opponent:#{socket.assigns.participant_id}", "done", %{
+      "verdict" => "failed",
+      "message" => message
+    })
+
+    [latest | rest] = socket.assigns.submissions
+    updated = %{latest | status: :failed, message: message}
+
+    {:noreply, assign(socket, submissions: [updated | rest])}
+  end
+
+  def handle_info(%{event: _event, payload: _result}, socket), do: {:noreply, socket}
 
   def handle_info(:tick, socket) do
     schedule_timer()
