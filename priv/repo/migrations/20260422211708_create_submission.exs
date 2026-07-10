@@ -17,6 +17,7 @@ defmodule CodeDuels.Repo.Migrations.CreateSubmission do
       add :problem_letter, :string, null: false
       add :verdict, :submission_verdict
       add :message, :text
+      add :tests_passed, :integer, default: 0
 
       timestamps(type: :utc_datetime)
     end

@@ -9,6 +9,7 @@ defmodule CodeDuels.Tournaments.Submission do
     field :problem_letter, :string
     field :verdict, CodeDuels.Tournaments.Verdict
     field :message, :string
+    field :tests_passed, :integer, default: 0
 
     belongs_to :user, CodeDuels.Accounts.User
     belongs_to :round, CodeDuels.Tournaments.Round
@@ -30,7 +31,8 @@ defmodule CodeDuels.Tournaments.Submission do
       :status,
       :problem_letter,
       :verdict,
-      :message
+      :message,
+      :tests_passed
     ])
     |> validate_required([:user_id, :round_id, :problem_id, :language, :code, :problem_letter])
   end
