@@ -16,34 +16,41 @@ defmodule CodeDuels.Tournaments.SubmissionJudge do
   @spec judge(attrs()) :: {:ok, %Submission{}} | {:error, Ecto.Changeset.t()}
   def judge(attrs) do
     with {:ok, submission} <- Submission.create_changeset(attrs) |> CodeDuels.Repo.insert() do
-      CodeDuelsWeb.Endpoint.broadcast!("submission:#{submission.id}", "pending", %{})
+      Phoenix.PubSub.broadcast(CodeDuels.PubSub, "submission:#{submission.id}", %{
+        event: "pending",
+        payload: %{}
+      })
 
       Task.Supervisor.start_child(CodeDuels.SubmissionTaskSupervisor, fn ->
         submission =
           Submission.changeset(submission, %{status: :testing}) |> CodeDuels.Repo.update!()
 
-        CodeDuelsWeb.Endpoint.broadcast!("submission:#{submission.id}", "testing", %{})
+        Phoenix.PubSub.broadcast(CodeDuels.PubSub, "submission:#{submission.id}", %{
+          event: "testing",
+          payload: %{}
+        })
 
         case @adapter.submit_code(attrs.code, attrs.language, attrs.problem_id) do
           {:ok, result} ->
+            tests_passed = Enum.count(result.test_cases, &(&1.verdict == :accepted))
+
             submission =
               Submission.changeset(submission, %{
                 status: :done,
                 verdict: result.verdict,
-                message: result.message
+                message: result.message,
+                tests_passed: tests_passed
               })
               |> CodeDuels.Repo.update!()
 
             Enum.each(result.test_cases, fn tc ->
-              CodeDuels.Repo.insert!(
-                %TestResult{
-                  submission_id: submission.id,
-                  test: tc.test,
-                  verdict: tc.verdict,
-                  time_ms: tc.time_ms,
-                  exit_code: tc.exit_code
-                }
-              )
+              CodeDuels.Repo.insert!(%TestResult{
+                submission_id: submission.id,
+                test: tc.test,
+                verdict: tc.verdict,
+                time_ms: tc.time_ms,
+                exit_code: tc.exit_code
+              })
             end)
 
             Phoenix.PubSub.broadcast(CodeDuels.PubSub, "submission:#{submission.id}", %{

@@ -22,7 +22,8 @@ defmodule CodeDuels.Runner do
           test_cases: [test_case()]
         }
 
-  @callback languages() :: [String.t()]
+  @callback languages() :: keyword(String.t())
+  @callback language_highlight_class(language :: String.t()) :: String.t()
   @callback submit_code(
               source_code :: String.t(),
               language :: String.t(),

@@ -32,6 +32,7 @@ defmodule CodeDuelsWeb.Router do
       live "/:id/standings", StandingsLive, :show
       live "/:id/pairings", PairingsLive, :show
       live "/:tournament_id/:round_number/submissions", SubmissionsLive, :show
+      live "/:tournament_id/:round_number/submissions/:submission_id", SubmissionViewLive, :show
       live "/:tournament_id/:round_number", RoundDetailLive, :show
       live "/:tournament_id/:round_number/problem", ProblemLive, :show
       live "/:tournament_id/:round_number/submit", SubmitLive, :show

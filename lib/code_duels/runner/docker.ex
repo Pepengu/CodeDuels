@@ -4,13 +4,13 @@ defmodule CodeDuels.Runner.Docker do
   @impl true
   def languages() do
     [
-      "gnu_cpp17",
-      "gnu_cpp23",
-      "visual_cpp",
-      "python",
-      "pypy",
-      "java",
-      "go"
+      gnu_cpp17: "GNU C++ 17",
+      gnu_cpp23: "GNU C++ 23",
+      visual_cpp: "Visual C++",
+      python: "Python3",
+      pypy: "PyPy3",
+      java: "Java",
+      go: "Go"
     ]
   end
 
@@ -43,6 +43,20 @@ defmodule CodeDuels.Runner.Docker do
       message: result["message"],
       test_cases: Enum.map(result["test_cases"] || [], &decode_test_case/1)
     }
+  end
+
+  @impl true
+  def language_highlight_class(language) do
+    case String.to_existing_atom(language) do
+      :gnu_cpp17 -> "cpp"
+      :gnu_cpp23 -> "cpp"
+      :visual_cpp -> "cpp"
+      :python -> "python"
+      :pypy -> "python"
+      :java -> "java"
+      :go -> "go"
+      _ -> ""
+    end
   end
 
   @impl true

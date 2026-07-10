@@ -158,6 +158,20 @@ defmodule CodeDuels.Tournaments do
     |> Map.new()
   end
 
+  def get_submission!(id) do
+    Repo.get!(Submission, id) |> Repo.preload([:user, :problem, :test_results])
+  end
+
+  def get_last_n_user_submissions(user_id, round_id, n) do
+    Repo.all(
+      from s in Submission,
+        where: s.user_id == ^user_id and s.round_id == ^round_id,
+        order_by: [desc: s.inserted_at],
+        limit: ^n,
+        preload: [:problem]
+    )
+  end
+
   def get_all_user_submissions(user_id, round_id) do
     Repo.all(
       from s in Submission,

@@ -6,6 +6,7 @@
 @source "../js";
 @source "../../lib/code_duels_web";
 @import "./problem-statement.css";
+@import "../vendor/highlight-theme.css";
 
 
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
@@ -37,12 +38,12 @@
     --color-neutral-content: oklch(0.80 0.04 265);
     --color-info: oklch(0.72 0.14 220);
     --color-info-content: oklch(0.95 0.01 220);
-    --color-success: oklch(0.78 0.18 135);
-    --color-success-content: oklch(0.95 0.01 135);
+    --color-success: oklch(0.45 0.12 145);
+    --color-success-content: oklch(0.15 0.03 260);
     --color-warning: oklch(0.77 0.12 75);
     --color-warning-content: oklch(0.15 0.01 75);
-    --color-error: oklch(0.70 0.18 20);
-    --color-error-content: oklch(0.95 0.01 20);
+    --color-error: oklch(0.45 0.12 10);
+    --color-error-content: oklch(0.15 0.01 75);
     --radius-selector: 0.5rem;
     --radius-field: 0.25rem;
     --radius-box: 0.5rem;
@@ -62,5 +63,26 @@
 
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
+
+/* Copy code button */
+.copy-code-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  padding: 4px;
+  border-radius: 4px;
+  background: var(--color-base-300);
+  color: var(--color-base-content);
+  cursor: pointer;
+  border: none;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.copy-code-btn:hover {
+  opacity: 1;
+  background: var(--color-base-100);
+}
 
 /* This file is for your main application CSS */

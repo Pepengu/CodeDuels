@@ -17,6 +17,9 @@
 // If you have dependencies that try to import CSS, esbuild will generate a separate `app.css` file.
 // To load it, simply add a second `<link>` to your `root.html.heex` file.
 
+// Syntax highlighting for code blocks
+import hljs from "../vendor/highlight.min.js"
+
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
 import "phoenix_html"
 // Establish Phoenix Socket and LiveView configuration.
@@ -159,6 +162,53 @@ Hooks.CountdownHook = {
     }
 
     this.el.textContent = "Завершён"
+  }
+}
+
+Hooks.CodeBlock = {
+  mounted() {
+    hljs.highlightElement(this.el)
+
+    const btn = document.createElement("button")
+    btn.className = "copy-code-btn"
+    btn.setAttribute("aria-label", "Копировать")
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M6.5 3.5A1.5 1.5 0 0 1 8 2h4a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 12 6H8a1.5 1.5 0 0 1-1.5-1.5v-1Z"/><path d="M5 4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2 1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/></svg>`
+    const card = this.el.closest(".card")
+    card.style.position = "relative"
+    card.appendChild(btn)
+
+    btn.addEventListener("click", async () => {
+      const text = this.el.textContent
+      try {
+        await navigator.clipboard.writeText(text)
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd"/></svg>`
+        setTimeout(() => {
+          btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M6.5 3.5A1.5 1.5 0 0 1 8 2h4a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 12 6H8a1.5 1.5 0 0 1-1.5-1.5v-1Z"/><path d="M5 4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2 1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/></svg>`
+        }, 2000)
+      } catch (e) {
+        // fallback
+        const ta = document.createElement("textarea")
+        ta.value = text
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand("copy")
+        document.body.removeChild(ta)
+      }
+    })
+
+    this.el.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+        e.preventDefault()
+        const range = document.createRange()
+        range.selectNodeContents(this.el)
+        const selection = window.getSelection()
+        selection.removeAllRanges()
+        selection.addRange(range)
+      }
+    })
+  },
+  updated() {
+    hljs.highlightElement(this.el)
   }
 }
 
