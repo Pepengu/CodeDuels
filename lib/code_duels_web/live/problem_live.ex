@@ -99,8 +99,40 @@ defmodule CodeDuelsWeb.ProblemLive do
 
                 <div class="card bg-base-200 shadow-xl">
                   <div class="card-body">
-                    <div class="problem-statement" , id="problem-statement" , phx-hook="MathJaxHook">
-                      {raw(@statement_html)}
+                    <div class="problem-statement" id="problem-statement" phx-hook="MathJaxHook">
+                      <div class="mathjax-skeleton space-y-4">
+                        <div class="space-y-3">
+                          <div class="h-4 bg-base-300 rounded w-full animate-pulse"></div>
+                          <div class="h-4 bg-base-300 rounded w-11/12 animate-pulse"></div>
+                          <div class="h-4 bg-base-300 rounded w-4/5 animate-pulse"></div>
+                        </div>
+                        <div class="h-5 bg-base-300 rounded w-1/3 animate-pulse mt-6"></div>
+                        <div class="space-y-3">
+                          <div class="h-4 bg-base-300 rounded w-full animate-pulse"></div>
+                          <div class="h-4 bg-base-300 rounded w-3/4 animate-pulse"></div>
+                        </div>
+                        <div class="h-5 bg-base-300 rounded w-1/3 animate-pulse mt-6"></div>
+                        <div class="space-y-3">
+                          <div class="h-4 bg-base-300 rounded w-full animate-pulse"></div>
+                          <div class="h-4 bg-base-300 rounded w-2/3 animate-pulse"></div>
+                        </div>
+                        <div class="h-5 bg-base-300 rounded w-1/4 animate-pulse mt-6"></div>
+                        <div class="grid grid-cols-2 gap-6">
+                          <div class="border border-base-300 rounded-lg p-3 space-y-2">
+                            <div class="h-4 bg-base-300 rounded w-1/4 animate-pulse"></div>
+                            <div class="h-3 bg-base-300 rounded w-full animate-pulse"></div>
+                            <div class="h-3 bg-base-300 rounded w-5/6 animate-pulse"></div>
+                            <div class="h-3 bg-base-300 rounded w-3/4 animate-pulse"></div>
+                          </div>
+                          <div class="border border-base-300 rounded-lg p-3 space-y-2">
+                            <div class="h-4 bg-base-300 rounded w-1/4 animate-pulse"></div>
+                            <div class="h-3 bg-base-300 rounded w-1/2 animate-pulse"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="problem-content hidden">
+                        {raw(@statement_html)}
+                      </div>
                     </div>
                   </div>
                 </div>

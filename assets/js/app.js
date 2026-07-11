@@ -42,8 +42,21 @@ Hooks.MathJaxHook = {
     this.syncTestLines()
   },
   renderMath() {
+    const content = this.el.querySelector(".problem-content")
+    const skeleton = this.el.querySelector(".mathjax-skeleton")
+
+    if (content) content.style.opacity = "0"
+
     if (window.MathJax && window.MathJax.Hub) {
       window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, this.el]);
+      window.MathJax.Hub.Queue(() => {
+        if (skeleton) skeleton.style.display = "none"
+        if (content) {
+          content.classList.remove("hidden")
+          content.style.transition = "opacity 0.3s ease"
+          content.style.opacity = "1"
+        }
+      })
     } else {
       setTimeout(() => this.renderMath(), 100);
     }
