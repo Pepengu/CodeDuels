@@ -1,6 +1,10 @@
 defmodule CodeDuelsWeb.SubmitLive do
   use CodeDuelsWeb, :live_view
 
+  import CodeDuelsWeb.Helpers.SubmissionHelpers
+  import CodeDuelsWeb.SubmissionsTable
+  import CodeDuelsWeb.Helpers.TimeHelpers
+
   alias CodeDuels.Tournaments.Submission
 
   @adapter Application.compile_env(:code_duels, :runner)[:adapter]
@@ -179,7 +183,7 @@ defmodule CodeDuelsWeb.SubmitLive do
     round = CodeDuels.Tournaments.get_round(tournament_id, round_number)
     round_num = String.to_integer(round_number)
 
-    problemset = CodeDuels.Tournaments.get_problemset(round.problemset)
+    problems = CodeDuels.Tournaments.Problemset.list_problems(round.problemset)
 
     duel =
       CodeDuels.Tournaments.get_duel_for_user(
@@ -201,19 +205,6 @@ defmodule CodeDuelsWeb.SubmitLive do
         end
       end
 
-    {problems, _} =
-      problemset
-      |> Enum.map_reduce(?A, fn problem, acc ->
-        {
-          %{
-            id: problem.id,
-            title: problem.title,
-            letter: <<acc>>
-          },
-          acc + 1
-        }
-      end)
-
     problem_options =
       [
         {"- Выберите задачу -", ""}
@@ -229,19 +220,9 @@ defmodule CodeDuelsWeb.SubmitLive do
       end
 
     is_admin = socket.assigns[:current_user] && socket.assigns[:current_user].is_admin
-    now = DateTime.utc_now()
-    round_unlock_time = CodeDuels.Tournaments.round_unlock_time(tournament, round_num)
-
-    round_end_time =
-      if round_unlock_time,
-        do: DateTime.add(round_unlock_time, tournament.round_time, :second),
-        else: nil
-
-    time_based_locked = round_unlock_time && DateTime.compare(now, round_unlock_time) == :lt
-    locked = time_based_locked && !is_admin
+    round_state = CodeDuels.Tournaments.RoundState.compute(tournament, round_num, is_admin)
 
     round_time_minutes = div(tournament.round_time, 60)
-    time_remaining = calculate_time_remaining(now, round_end_time, round_unlock_time)
 
     initial = if preselected_problem_id, do: %{"problem_id" => preselected_problem_id}, else: %{}
 
@@ -270,13 +251,13 @@ defmodule CodeDuelsWeb.SubmitLive do
        round_id: round.id,
        problems: problems,
        problem_options: problem_options,
-       locked: locked,
-       time_based_locked: time_based_locked,
-       round_unlock_time: round_unlock_time,
-       round_end_time: round_end_time,
-       now: now,
+       locked: round_state.locked,
+       time_based_locked: round_state.time_based_locked,
+       round_unlock_time: round_state.round_unlock_time,
+       round_end_time: round_state.round_end_time,
+       now: round_state.now,
        round_time_minutes: round_time_minutes,
-       time_remaining: time_remaining,
+       time_remaining: round_state.time_remaining,
        languages: @languages,
        form: form,
        error: :none,
@@ -343,7 +324,7 @@ defmodule CodeDuelsWeb.SubmitLive do
 
     case CodeDuels.Tournaments.SubmissionJudge.judge(attrs) do
       {:ok, sub} ->
-        Phoenix.PubSub.subscribe(CodeDuels.PubSub, "submission:#{sub.id}")
+        CodeDuelsWeb.Endpoint.subscribe("submission:#{sub.id}")
         submissions = [sub | socket.assigns.submissions] |> Enum.take(3)
         {:noreply, assign(socket, error: :success, submissions: submissions)}
 
@@ -386,54 +367,21 @@ defmodule CodeDuelsWeb.SubmitLive do
 
   def handle_info(:tick, socket) do
     schedule_timer()
-    now = DateTime.utc_now()
-    round_unlock_time = socket.assigns[:round_unlock_time]
-    round_end_time = socket.assigns[:round_end_time]
-    is_time_based_locked = round_unlock_time && DateTime.compare(now, round_unlock_time) == :lt
-
     is_admin = socket.assigns[:current_user] && socket.assigns[:current_user].is_admin
-    locked = is_time_based_locked && !is_admin
 
-    time_remaining = calculate_time_remaining(now, round_end_time, round_unlock_time)
+    round_state =
+      CodeDuels.Tournaments.RoundState.compute(
+        socket.assigns.tournament,
+        socket.assigns.round_number,
+        is_admin
+      )
 
     {:noreply,
      assign(socket,
-       now: now,
-       locked: locked,
-       time_based_locked: is_time_based_locked,
-       time_remaining: time_remaining
+       now: round_state.now,
+       locked: round_state.locked,
+       time_based_locked: round_state.time_based_locked,
+       time_remaining: round_state.time_remaining
      )}
-  end
-
-  defp schedule_timer do
-    Process.send_after(self(), :tick, 1000)
-  end
-
-  defp calculate_time_remaining(now, round_end_time, round_unlock_time) do
-    cond do
-      round_unlock_time == nil ->
-        "-"
-
-      DateTime.compare(now, round_unlock_time) == :lt ->
-        "-"
-
-      round_end_time && DateTime.compare(now, round_end_time) == :lt ->
-        diff = DateTime.diff(round_end_time, now)
-        format_time(diff)
-
-      round_end_time && DateTime.compare(now, round_end_time) == :gt ->
-        "Завершён"
-
-      true ->
-        "0 сек"
-    end
-  end
-
-  defp format_time(seconds) when seconds < 60, do: "#{seconds} сек"
-
-  defp format_time(seconds) do
-    minutes = div(seconds, 60)
-    remaining_seconds = rem(seconds, 60)
-    "#{minutes} мин #{remaining_seconds} сек"
   end
 end

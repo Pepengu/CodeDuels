@@ -1,6 +1,8 @@
 defmodule CodeDuelsWeb.PairingsLive do
   use CodeDuelsWeb, :live_view
 
+  import CodeDuelsWeb.Helpers.TableHelpers
+
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_user={@current_user}>
@@ -48,22 +50,22 @@ defmodule CodeDuelsWeb.PairingsLive do
                           (duel.player_a.user_id == @current_user.id ||
                              duel.player_b.user_id == @current_user.id) %>
                       <tr class="hover">
-                        <td class={cell_class("text-blue-500", is_current_user)}>
+                        <td class={current_user_class("text-blue-500", is_current_user)}>
                           {player_name(duel.player_a)}
                         </td>
-                        <td class={cell_class(nil, is_current_user)}>
+                        <td class={current_user_class(nil, is_current_user)}>
                           {player_penality(duel.scores, :A)}
                         </td>
-                        <td class={cell_class("text-red-500", is_current_user)}>
+                        <td class={current_user_class("text-red-500", is_current_user)}>
                           {player_name(duel.player_b)}
                         </td>
-                        <td class={cell_class(nil, is_current_user)}>
+                        <td class={current_user_class(nil, is_current_user)}>
                           {player_penality(duel.scores, :B)}
                         </td>
                         <%= for i <- 0..(@tournament.problems_per_round || 5) - 1 do %>
                           <% score = problem_display(duel.scores, i) %>
                           <td class={
-                            cell_class("font-mono", is_current_user) ++
+                            current_user_class("font-mono", is_current_user) ++
                               case score do
                                 x when x < 0 -> ["text-blue-500"]
                                 x when x > 0 -> ["text-red-500"]
@@ -79,7 +81,7 @@ defmodule CodeDuelsWeb.PairingsLive do
                         <% end %>
                         <% score = duel_total(duel.scores, @tournament.scores) %>
                         <td class={
-                          cell_class("font-mono font-semibold", is_current_user) ++
+                          current_user_class("font-mono font-semibold", is_current_user) ++
                             if score != "-:-" do
                               [a, b] = String.split(score, ":") |> Enum.map(&String.to_integer/1)
 
@@ -115,14 +117,6 @@ defmodule CodeDuelsWeb.PairingsLive do
     """
   end
 
-  defp cell_class(base_class, highlight?) do
-    if highlight? do
-      List.wrap(base_class) ++ ["bg-yellow-500/10"]
-    else
-      List.wrap(base_class)
-    end
-  end
-
   defp player_name(nil), do: "BYE"
 
   defp player_name(participant) do
@@ -141,7 +135,7 @@ defmodule CodeDuelsWeb.PairingsLive do
     "#{scores |> Enum.reduce(0, fn val, acc -> if val > 0, do: acc + val, else: acc end)}"
   end
 
-  defp problem_display(nil, _idx), do: {nil, "-"}
+  defp problem_display(nil, _idx), do: 0
 
   defp problem_display(scores, idx) do
     cond do

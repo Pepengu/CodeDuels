@@ -1,6 +1,8 @@
 defmodule CodeDuelsWeb.ProblemLive do
   use CodeDuelsWeb, :live_view
 
+  import CodeDuelsWeb.SubmissionsTable
+
   def render(assigns) do
     cond do
       assigns.locked ->
@@ -262,15 +264,6 @@ defmodule CodeDuelsWeb.ProblemLive do
     """
   end
 
-  defp clean_problem_html(html) when is_binary(html) do
-    doc =
-      Floki.parse_document!(html)
-      |> Floki.filter_out("[class~='header']")
-      |> Floki.filter_out("link")
-
-    Floki.raw_html(doc, encode: false)
-  end
-
   def mount(
         %{
           "tournament_id" => tournament_id,
@@ -280,63 +273,35 @@ defmodule CodeDuelsWeb.ProblemLive do
         _session,
         socket
       ) do
-    IO.inspect(socket)
     problem_letter = letter || ""
     tournament = CodeDuels.Tournaments.get_tournament!(tournament_id)
     round_num = String.to_integer(round_number)
     round = CodeDuels.Tournaments.get_round(tournament_id, round_num)
 
-    letter_index = letter_to_index(problem_letter)
-
     problem_id =
-      if round && round.problemset && letter_index >= 0 &&
-           letter_index < length(round.problemset || []) do
-        Enum.at(round.problemset, letter_index)
-      else
-        nil
-      end
+      if round && round.problemset,
+        do: CodeDuels.Tournaments.Problemset.resolve_problem_id(round.problemset, problem_letter),
+        else: nil
 
     problem = if problem_id, do: CodeDuels.Problems.get_problem!(problem_id), else: nil
 
-    problemset = if round, do: CodeDuels.Tournaments.get_problemset(round.problemset), else: []
-
     problems =
-      problemset
-      |> Enum.map_reduce(?A, fn problem, acc ->
-        {%{
-           id: problem.id,
-           title: problem.title,
-           letter: <<acc>>
-         }, acc + 1}
-      end)
-      |> elem(0)
+      if round && round.problemset,
+        do: CodeDuels.Tournaments.Problemset.list_problems(round.problemset),
+        else: []
 
     statement_html =
       with problem when not is_nil(problem) <- problem,
            path when is_binary(path) <- problem.statement,
            true <- File.exists?(path),
            {:ok, content} <- File.read(path) do
-        clean_problem_html(content)
+        CodeDuels.Tournaments.Problemset.clean_statement_html(content)
       else
         _ -> nil
       end
 
     is_admin = socket.assigns[:current_user] && socket.assigns[:current_user].is_admin
-    now = DateTime.utc_now()
-    round_unlock_time = CodeDuels.Tournaments.round_unlock_time(tournament, round_num)
-
-    round_end_time =
-      if round_unlock_time,
-        do: DateTime.add(round_unlock_time, tournament.round_time, :second),
-        else: nil
-
-    time_based_locked = round_unlock_time && DateTime.compare(now, round_unlock_time) == :lt
-    locked = time_based_locked && !is_admin
-
-    time_remaining = calculate_time_remaining(now, round_end_time, round_unlock_time)
-
-    unlock_ts = round_unlock_time && DateTime.to_unix(round_unlock_time)
-    end_ts = round_end_time && DateTime.to_unix(round_end_time)
+    round_state = CodeDuels.Tournaments.RoundState.compute(tournament, round_num, is_admin)
 
     submissions =
       CodeDuels.Tournaments.get_all_user_submissions(
@@ -368,7 +333,7 @@ defmodule CodeDuelsWeb.ProblemLive do
               do: Enum.slice(tournament.scores, start_idx, ppr),
               else: List.duplicate(1, ppr)
 
-          problem_ids = problemset |> Enum.map(& &1.id)
+          problem_ids = problems |> Enum.map(& &1.id)
 
           subs_data =
             CodeDuels.Tournaments.get_submissions_for_participants(
@@ -437,13 +402,13 @@ defmodule CodeDuelsWeb.ProblemLive do
        problems: problems,
        problem_letter: String.upcase(problem_letter),
        statement_html: statement_html,
-       locked: locked,
-       round_unlock_time: round_unlock_time,
-       round_end_time: round_end_time,
-       now: now,
-       time_remaining: time_remaining,
-       unlock_ts: unlock_ts,
-       end_ts: end_ts,
+       locked: round_state.locked,
+       round_unlock_time: round_state.round_unlock_time,
+       round_end_time: round_state.round_end_time,
+       now: round_state.now,
+       time_remaining: round_state.time_remaining,
+       unlock_ts: round_state.unlock_ts,
+       end_ts: round_state.end_ts,
        submissions: submissions,
        duel_a_name: duel_a_name,
        duel_b_name: duel_b_name,
@@ -452,21 +417,6 @@ defmodule CodeDuelsWeb.ProblemLive do
        duel_b_score: duel_b_score,
        duel_problems: duel_problems
      })}
-  end
-
-  defp letter_to_index(letter) do
-    case letter |> String.upcase() |> String.to_charlist() |> hd() do
-      c when c >= ?A and c <= ?Z -> c - ?A
-      _ -> -1
-    end
-  end
-
-  defp format_time(seconds) when seconds < 60, do: "#{seconds} сек"
-
-  defp format_time(seconds) do
-    minutes = div(seconds, 60)
-    remaining_seconds = rem(seconds, 60)
-    "#{minutes} мин #{remaining_seconds} сек"
   end
 
   defp format_time_limit(ms) when ms >= 1000, do: "#{div(ms, 1000)} сек"
@@ -479,27 +429,6 @@ defmodule CodeDuelsWeb.ProblemLive do
       "#{mb} МБ"
     else
       "#{kb} КБ"
-    end
-  end
-
-  defp calculate_time_remaining(now, round_end_time, round_unlock_time) do
-    cond do
-      round_unlock_time == nil ->
-        ""
-
-      DateTime.compare(now, round_unlock_time) == :lt ->
-        diff = DateTime.diff(round_unlock_time, now)
-        "До начала #{format_time(diff)}"
-
-      round_end_time && DateTime.compare(now, round_end_time) == :lt ->
-        diff = DateTime.diff(round_end_time, now)
-        format_time(diff)
-
-      round_end_time && DateTime.compare(now, round_end_time) == :gt ->
-        "Завершён"
-
-      true ->
-        "0 сек"
     end
   end
 

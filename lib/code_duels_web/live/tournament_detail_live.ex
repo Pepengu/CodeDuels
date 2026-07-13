@@ -1,6 +1,8 @@
 defmodule CodeDuelsWeb.TournamentDetailLive do
   use CodeDuelsWeb, :live_view
 
+  import CodeDuelsWeb.Helpers.TimeHelpers
+
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_user={@current_user}>
@@ -79,7 +81,7 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
 
     is_admin = current_user && current_user.is_admin
     now = assigns.now || DateTime.utc_now()
-    round_unlock_time = calculate_round_unlock_time(tournament, round)
+    round_unlock_time = CodeDuels.Tournaments.round_unlock_time(tournament, round)
 
     is_unlocked_by_time =
       is_nil(round_unlock_time) ||
@@ -145,30 +147,11 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
     end
   end
 
-  defp calculate_round_unlock_time(tournament, round) do
-    if tournament.start_time do
-      offset_seconds =
-        (round - 1) * tournament.round_time + (round - 1) * tournament.intermission_time
-
-      DateTime.add(tournament.start_time, offset_seconds, :second)
-    else
-      nil
-    end
-  end
-
   defp format_datetime_msk(nil), do: "Не задано"
 
   defp format_datetime_msk(datetime) do
     msk_time = DateTime.add(datetime, 3 * 3600, :second)
     Calendar.strftime(msk_time, "%Y-%m-%d %H:%M MSK")
-  end
-
-  defp format_time(seconds) when seconds < 60, do: "#{seconds} сек"
-
-  defp format_time(seconds) do
-    minutes = div(seconds, 60)
-    remaining_seconds = rem(seconds, 60)
-    "#{minutes} мин #{remaining_seconds} сек"
   end
 
   def mount(%{"id" => id}, _session, socket) do
@@ -189,7 +172,7 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
 
     newly_unlocked =
       for round <- 1..(tournament.rounds_amount || 0),
-          round_unlock_time = calculate_round_unlock_time(tournament, round),
+          round_unlock_time = CodeDuels.Tournaments.round_unlock_time(tournament, round),
           round_unlock_time,
           reduce: nil do
         acc ->
@@ -218,9 +201,5 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
       end
 
     {:noreply, assign(socket, :now, now)}
-  end
-
-  defp schedule_timer do
-    Process.send_after(self(), :tick, 1000)
   end
 end

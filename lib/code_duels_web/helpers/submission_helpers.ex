@@ -1,4 +1,4 @@
-defmodule CodeDuelsWeb.SubmissionHelpers do
+defmodule CodeDuelsWeb.Helpers.SubmissionHelpers do
   @adapter Application.compile_env(:code_duels, :runner)[:adapter]
 
   @language_map @adapter.languages()

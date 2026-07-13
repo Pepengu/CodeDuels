@@ -1,7 +1,8 @@
 defmodule CodeDuelsWeb.SubmissionsLive do
   use CodeDuelsWeb, :live_view
 
-  on_mount {CodeDuelsWeb.LiveAuth, :default}
+  import CodeDuelsWeb.SubmissionsTable
+  import CodeDuelsWeb.Helpers.TableHelpers
 
   def render(assigns) do
     ~H"""
@@ -32,19 +33,21 @@ defmodule CodeDuelsWeb.SubmissionsLive do
                     <%= for {player_name, player_data} <- @player_submissions do %>
                       <% is_current_user = @current_user && player_data.user_id == @current_user.id %>
                       <tr class="hover">
-                        <td class={cell_class("font-medium whitespace-nowrap", is_current_user)}>
+                        <td class={
+                          current_user_class("font-medium whitespace-nowrap", is_current_user)
+                        }>
                           {player_name}
                         </td>
-                        <td class={cell_class("text-center font-bold", is_current_user)}>
+                        <td class={current_user_class("text-center font-bold", is_current_user)}>
                           {player_data.score}
                         </td>
-                        <td class={cell_class("text-center", is_current_user)}>
+                        <td class={current_user_class("text-center", is_current_user)}>
                           {player_data.penalty}
                         </td>
                         <%= for sub_data <- player_data.submissions_by_idx do %>
                           <% {prefix, time_str} = render_submission_text(sub_data) %>
                           <td class={
-                            cell_class("text-center", is_current_user) ++
+                            current_user_class("text-center", is_current_user) ++
                               submission_class(sub_data)
                           }>
                             <div>{prefix}</div>
@@ -257,14 +260,6 @@ defmodule CodeDuelsWeb.SubmissionsLive do
           {score_acc, penalty_acc}
       end
     end)
-  end
-
-  defp cell_class(base_class, highlight?) do
-    if highlight? do
-      List.wrap(base_class) ++ ["bg-yellow-500/10"]
-    else
-      List.wrap(base_class)
-    end
   end
 
   defp submission_class(nil), do: []

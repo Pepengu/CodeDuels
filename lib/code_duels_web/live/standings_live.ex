@@ -1,7 +1,7 @@
 defmodule CodeDuelsWeb.StandingsLive do
   use CodeDuelsWeb, :live_view
 
-  on_mount {CodeDuelsWeb.LiveAuth, :default}
+  import CodeDuelsWeb.Helpers.TableHelpers
 
   def render(assigns) do
     ~H"""
@@ -30,7 +30,7 @@ defmodule CodeDuelsWeb.StandingsLive do
               <%= for entry <- @standings do %>
                 <% is_current_user = @current_user && entry.user_id == @current_user.id %>
                 <tr class="hover">
-                  <td class={cell_class("text-center font-semibold", is_current_user)}>
+                  <td class={current_user_class("text-center font-semibold", is_current_user)}>
                     {case entry.rank do
                       1 -> "🥇"
                       2 -> "🥈"
@@ -38,28 +38,30 @@ defmodule CodeDuelsWeb.StandingsLive do
                       _ -> entry.rank
                     end}
                   </td>
-                  <td class={cell_class("font-medium whitespace-nowrap", is_current_user)}>
+                  <td class={current_user_class("font-medium whitespace-nowrap", is_current_user)}>
                     {entry.name}
                   </td>
-                  <td class={cell_class("text-center font-bold", is_current_user)}>
+                  <td class={current_user_class("text-center font-bold", is_current_user)}>
                     {Float.round(entry.score, 1)}
                   </td>
-                  <td class={cell_class("text-center", is_current_user)}>
+                  <td class={current_user_class("text-center", is_current_user)}>
                     {entry.tournament_points}
                   </td>
-                  <td class={cell_class("text-center", is_current_user)}>{entry.total_penalty}</td>
-                  <td class={cell_class("text-center text-green-600", is_current_user)}>
+                  <td class={current_user_class("text-center", is_current_user)}>
+                    {entry.total_penalty}
+                  </td>
+                  <td class={current_user_class("text-center text-green-600", is_current_user)}>
                     {entry.wins}
                   </td>
-                  <td class={cell_class("text-center text-yellow-600", is_current_user)}>
+                  <td class={current_user_class("text-center text-yellow-600", is_current_user)}>
                     {entry.draws}
                   </td>
-                  <td class={cell_class("text-center text-red-600", is_current_user)}>
+                  <td class={current_user_class("text-center text-red-600", is_current_user)}>
                     {entry.losses}
                   </td>
                   <%= for round_num <- 1..@tournament.rounds_amount do %>
                     <% round_data = Enum.at(entry.round_results, round_num - 1) %>
-                    <td class={cell_class(nil, is_current_user) ++ result_class(round_data)}>
+                    <td class={current_user_class(nil, is_current_user) ++ result_class(round_data)}>
                       <div class="font-bold">{elem(round_data, 0)}</div>
                       <div class="text-xs text-gray-400">{elem(round_data, 1)}</div>
                     </td>
@@ -82,17 +84,9 @@ defmodule CodeDuelsWeb.StandingsLive do
 
   def mount(%{"id" => id}, _session, socket) do
     tournament = CodeDuels.Tournaments.get_tournament!(id)
-    standings = CodeDuels.Tournaments.get_standings_with_stats(id)
+    standings = CodeDuels.Tournaments.Standings.get_with_stats(id)
 
     {:ok, assign(socket, tournament: tournament, standings: standings)}
-  end
-
-  defp cell_class(base_class, highlight?) do
-    if highlight? do
-      List.wrap(base_class) ++ ["bg-yellow-500/10"]
-    else
-      List.wrap(base_class)
-    end
   end
 
   defp result_class(round_data) do

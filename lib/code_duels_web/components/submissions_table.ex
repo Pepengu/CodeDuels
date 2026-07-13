@@ -1,7 +1,7 @@
 defmodule CodeDuelsWeb.SubmissionsTable do
   use Phoenix.Component
   use Gettext, backend: CodeDuelsWeb.Gettext
-  import CodeDuelsWeb.SubmissionHelpers
+  import CodeDuelsWeb.Helpers.SubmissionHelpers
 
   attr :title, :string, required: true
   attr :submissions, :list, required: true

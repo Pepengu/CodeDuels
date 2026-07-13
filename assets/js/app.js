@@ -30,6 +30,33 @@ import topbar from "../vendor/topbar"
 
 let Hooks = {}
 
+function addCopyButton(targetEl, {getText, className, appendTo}) {
+  const btn = document.createElement("button")
+  btn.className = className
+  btn.setAttribute("aria-label", "Копировать")
+
+  const icon = document.createElement("span")
+  icon.className = "hero-clipboard-document-mini"
+  btn.appendChild(icon)
+
+  btn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(getText())
+    } catch {
+      const ta = document.createElement("textarea")
+      ta.value = getText()
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand("copy")
+      document.body.removeChild(ta)
+    }
+    icon.className = "hero-clipboard-document-check-mini"
+    setTimeout(() => icon.className = "hero-clipboard-document-mini", 2000)
+  })
+
+  appendTo.appendChild(btn)
+}
+
 Hooks.MathJaxHook = {
   mounted() {
     this.renderMath()
@@ -64,27 +91,13 @@ Hooks.MathJaxHook = {
   addCopyButtons() {
     this.el.querySelectorAll(".input, .output").forEach(el => {
       if (el.querySelector(".copy-sample-btn")) return
-
       const title = el.querySelector(".title")
       if (!title) return
-
-      const btn = document.createElement("button")
-      btn.className = "copy-sample-btn"
-      btn.setAttribute("aria-label", "Копировать")
-
-      const icon = document.createElement("span")
-      icon.className = "hero-clipboard-document-mini"
-
-      btn.appendChild(icon)
-      btn.addEventListener("click", () => {
-        const pre = el.querySelector("pre.content")
-        if (pre) {
-          navigator.clipboard.writeText(pre.textContent.trim())
-          icon.className = "hero-clipboard-document-check-mini"
-          setTimeout(() => icon.className = "hero-clipboard-document-mini", 2000)
-        }
+      addCopyButton(el, {
+        getText: () => el.querySelector("pre.content")?.textContent.trim() ?? "",
+        className: "copy-sample-btn",
+        appendTo: title,
       })
-      title.appendChild(btn)
     })
   },
   syncTestLines() {
@@ -182,31 +195,12 @@ Hooks.CodeBlock = {
   mounted() {
     hljs.highlightElement(this.el)
 
-    const btn = document.createElement("button")
-    btn.className = "copy-code-btn"
-    btn.setAttribute("aria-label", "Копировать")
-    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M6.5 3.5A1.5 1.5 0 0 1 8 2h4a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 12 6H8a1.5 1.5 0 0 1-1.5-1.5v-1Z"/><path d="M5 4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2 1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/></svg>`
     const card = this.el.closest(".card")
     card.style.position = "relative"
-    card.appendChild(btn)
-
-    btn.addEventListener("click", async () => {
-      const text = this.el.textContent
-      try {
-        await navigator.clipboard.writeText(text)
-        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd"/></svg>`
-        setTimeout(() => {
-          btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M6.5 3.5A1.5 1.5 0 0 1 8 2h4a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 12 6H8a1.5 1.5 0 0 1-1.5-1.5v-1Z"/><path d="M5 4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2 1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/></svg>`
-        }, 2000)
-      } catch (e) {
-        // fallback
-        const ta = document.createElement("textarea")
-        ta.value = text
-        document.body.appendChild(ta)
-        ta.select()
-        document.execCommand("copy")
-        document.body.removeChild(ta)
-      }
+    addCopyButton(this.el, {
+      getText: () => this.el.textContent,
+      className: "copy-code-btn",
+      appendTo: card,
     })
 
     this.el.addEventListener("keydown", (e) => {

@@ -1,17 +1,9 @@
 defmodule CodeDuelsWeb.RoundDetailLive do
   use CodeDuelsWeb, :live_view
 
+  import CodeDuelsWeb.Helpers.TimeHelpers
+
   def render(assigns) do
-    time_remaining =
-      if assigns.round_unlock_time && assigns.now do
-        diff = DateTime.diff(assigns.round_unlock_time, assigns.now)
-        if diff > 0, do: format_time(diff), else: "0 сек"
-      else
-        ""
-      end
-
-    assigns = assign(assigns, :time_remaining, time_remaining)
-
     cond do
       assigns.locked ->
         ~H"""
@@ -23,8 +15,7 @@ defmodule CodeDuelsWeb.RoundDetailLive do
             <div class="card bg-base-200 shadow-xl">
               <div class="card-body text-center py-12">
                 <h2 class="text-2xl font-bold">Раунд ещё не начался</h2>
-                <p class="text-lg opacity-70 mt-4">До начала осталось</p>
-                <p class="text-3xl font-bold text-primary mt-2">{@time_remaining}</p>
+                <p class="text-3xl font-bold text-primary mt-4">{@time_remaining}</p>
               </div>
             </div>
           </div>
@@ -38,9 +29,7 @@ defmodule CodeDuelsWeb.RoundDetailLive do
           <div class="container mx-auto px-4 py-8">
             <.round_header tournament={@tournament} round_number={@round_number} active_tab="problems" />
 
-            <div class="alert alert-warning mb-6">
-              <span>Раунд начнётся через: <strong>{@time_remaining}</strong></span>
-            </div>
+            <span class="alert alert-warning mb-6">{@time_remaining}</span>
 
             <div class="grid gap-6 lg:grid-cols-3">
               <div class="lg:col-span-2">
@@ -192,7 +181,6 @@ defmodule CodeDuelsWeb.RoundDetailLive do
     tournament = CodeDuels.Tournaments.get_tournament!(tournament_id)
     round = CodeDuels.Tournaments.get_round(tournament_id, round_number)
     problemset = CodeDuels.Tournaments.get_problemset(round.problemset)
-    IO.inspect(problemset)
     round_num = String.to_integer(round_number)
 
     ppr = tournament.problems_per_round || 3
@@ -219,10 +207,7 @@ defmodule CodeDuelsWeb.RoundDetailLive do
       end)
 
     is_admin = socket.assigns[:current_user] && socket.assigns[:current_user].is_admin
-    now = DateTime.utc_now()
-    round_unlock_time = calculate_round_unlock_time(tournament, round_num)
-    time_based_locked = round_unlock_time && DateTime.compare(now, round_unlock_time) == :lt
-    locked = time_based_locked && !is_admin
+    round_state = CodeDuels.Tournaments.RoundState.compute(tournament, round_num, is_admin)
 
     schedule_timer()
 
@@ -234,46 +219,36 @@ defmodule CodeDuelsWeb.RoundDetailLive do
        problems: problems,
        round_scores: round_scores,
        total_score: total_score,
-       locked: locked,
-       time_based_locked: time_based_locked,
-       round_unlock_time: round_unlock_time,
-       now: now
+       locked: round_state.locked,
+       time_based_locked: round_state.time_based_locked,
+       time_remaining: round_state.time_remaining,
+       round_unlock_time: round_state.round_unlock_time,
+       now: round_state.now
      })}
-  end
-
-  defp calculate_round_unlock_time(tournament, round) do
-    if tournament.start_time do
-      offset_seconds =
-        (round - 1) * tournament.round_time + (round - 1) * tournament.intermission_time
-
-      DateTime.add(tournament.start_time, offset_seconds, :second)
-    else
-      nil
-    end
-  end
-
-  defp format_time(seconds) when seconds < 60, do: "#{seconds} сек"
-
-  defp format_time(seconds) do
-    minutes = div(seconds, 60)
-    remaining_seconds = rem(seconds, 60)
-    "#{minutes} мин #{remaining_seconds} сек"
   end
 
   def handle_info(:tick, socket) do
     schedule_timer()
-    now = DateTime.utc_now()
     was_time_based_locked = socket.assigns[:time_based_locked]
-    round_unlock_time = socket.assigns[:round_unlock_time]
-    is_time_based_locked = round_unlock_time && DateTime.compare(now, round_unlock_time) == :lt
-
     is_admin = socket.assigns[:current_user] && socket.assigns[:current_user].is_admin
-    locked = is_time_based_locked && !is_admin
 
-    socket = assign(socket, now: now, locked: locked, time_based_locked: is_time_based_locked)
+    round_state =
+      CodeDuels.Tournaments.RoundState.compute(
+        socket.assigns.tournament,
+        socket.assigns.round_number,
+        is_admin
+      )
 
     socket =
-      if was_time_based_locked && !is_time_based_locked do
+      assign(socket,
+        now: round_state.now,
+        locked: round_state.locked,
+        time_based_locked: round_state.time_based_locked,
+        time_remaining: round_state.time_remaining
+      )
+
+    socket =
+      if was_time_based_locked && !round_state.time_based_locked do
         send_update(CodeDuelsWeb.RoundNotificationPopup,
           id: "round-notification",
           action: :show,
@@ -287,9 +262,5 @@ defmodule CodeDuelsWeb.RoundDetailLive do
       end
 
     {:noreply, socket}
-  end
-
-  defp schedule_timer do
-    Process.send_after(self(), :tick, 1000)
   end
 end

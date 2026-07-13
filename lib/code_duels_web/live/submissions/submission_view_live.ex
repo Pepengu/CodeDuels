@@ -1,7 +1,7 @@
 defmodule CodeDuelsWeb.SubmissionViewLive do
   use CodeDuelsWeb, :live_view
 
-  on_mount {CodeDuelsWeb.LiveAuth, :default}
+  import CodeDuelsWeb.Helpers.SubmissionHelpers
 
   def render(assigns) do
     ~H"""
@@ -146,7 +146,7 @@ defmodule CodeDuelsWeb.SubmissionViewLive do
     current_user = socket.assigns[:current_user]
 
     if submission.user_id == current_user.id do
-      Phoenix.PubSub.subscribe(CodeDuels.PubSub, "submission:#{submission.id}")
+      CodeDuelsWeb.Endpoint.subscribe("submission:#{submission.id}")
 
       {:ok,
        assign(socket, %{

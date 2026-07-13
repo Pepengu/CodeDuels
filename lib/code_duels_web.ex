@@ -86,9 +86,6 @@ defmodule CodeDuelsWeb do
       import Phoenix.HTML
       # Core UI components
       import CodeDuelsWeb.CoreComponents
-      import CodeDuelsWeb.SubmissionsTable
-      import CodeDuelsWeb.SubmissionHelpers
-
       # Common modules used in templates
       alias Phoenix.LiveView.JS
       alias CodeDuelsWeb.Layouts
