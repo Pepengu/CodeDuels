@@ -77,19 +77,7 @@ defmodule CodeDuelsWeb.SubmitLive do
               </div>
 
               <div class="submission grid grid-cols-2 gap-4 items-center">
-                <div
-                  class="error_box card p-2"
-                  style={
-                    "border-radius: 4px;
-                     align-items: center;
-                     justify-content: center;
-                     border-radius: var(--radius-field);
-                     white-space: pre-line;
-                     #{error_style(@error)}"
-                  }
-                >
-                  {error_message(@error)}
-                </div>
+                <.error_box message={error_message(@error)} style={error_style(@error)} />
                 <button
                   type="button"
                   class="btn btn-primary btn-block"
@@ -153,6 +141,7 @@ defmodule CodeDuelsWeb.SubmitLive do
     """
   end
 
+  def error_message(nil), do: ""
   def error_message(:none), do: ""
   def error_message(:no_problem), do: "Необходимо выбрать задачу"
   def error_message(:no_code), do: "Поле кода не может быть пустым"
@@ -163,6 +152,7 @@ defmodule CodeDuelsWeb.SubmitLive do
 
   def error_message(_), do: ""
 
+  def error_style(nil), do: "visibility: hidden"
   def error_style(:none), do: "visibility: hidden"
 
   def error_style(:success),

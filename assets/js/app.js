@@ -265,6 +265,50 @@ Hooks.CodeInput = {
   }
 }
 
+Hooks.PhoneCodeHook = {
+  mounted() {
+    this.el.addEventListener('input', () => {
+      let val = this.el.value
+      if (!val.startsWith('+')) {
+        val = '+' + val.replace(/[^0-9]/g, '')
+      }
+      this.el.value = val
+    })
+  }
+}
+
+Hooks.PhoneMaskHook = {
+  mounted() {
+    this.el.addEventListener('input', () => {
+      const cursorPos = this.el.selectionStart
+      const oldVal = this.el.value
+
+      const digitsBefore = oldVal.slice(0, cursorPos).replace(/\D/g, '').length
+      const digits = oldVal.replace(/\D/g, '').slice(0, 10)
+
+      let result = ''
+      for (let i = 0; i < digits.length; i++) {
+        if (i === 0) result += '('
+        result += digits[i]
+        if (i === 2) result += ') '
+        if (i === 5) result += '-'
+        if (i === 7) result += '-'
+      }
+
+      this.el.value = result
+
+      let pos = 0
+      let count = 0
+      for (let i = 0; i < result.length; i++) {
+        if (count === digitsBefore) break
+        pos = i + 1
+        if (/\d/.test(result[i])) count++
+      }
+      this.el.setSelectionRange(pos, pos)
+    })
+  }
+}
+
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,

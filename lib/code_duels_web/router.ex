@@ -26,16 +26,21 @@ defmodule CodeDuelsWeb.Router do
 
     live_session :default,
       on_mount: {CodeDuelsWeb.LiveAuth, :default} do
-      # live "/", HomePageLive, :index
-      live "/", TournamentPageLive, :index
-      live "/:id", TournamentDetailLive, :show
-      live "/:id/standings", StandingsLive, :show
-      live "/:id/pairings", PairingsLive, :show
-      live "/:tournament_id/:round_number/submissions", SubmissionsLive, :show
-      live "/:tournament_id/:round_number/submissions/:submission_id", SubmissionViewLive, :show
-      live "/:tournament_id/:round_number", RoundDetailLive, :show
-      live "/:tournament_id/:round_number/problem", ProblemLive, :show
-      live "/:tournament_id/:round_number/submit", SubmitLive, :show
+      live "/", HomePageLive, :index
+      live "/tournament", TournamentPageLive, :index
+      live "/tournament/:id", TournamentDetailLive, :show
+      live "/tournament/:id/registration", TournamentRegistrationLive, :show
+      live "/tournament/:id/standings", StandingsLive, :show
+      live "/tournament/:id/pairings", PairingsLive, :show
+      live "/tournament/:tournament_id/:round_number/submissions", SubmissionsLive, :show
+
+      live "/tournament/:tournament_id/:round_number/submissions/:submission_id",
+           SubmissionViewLive,
+           :show
+
+      live "/tournament/:tournament_id/:round_number", RoundDetailLive, :show
+      live "/tournament/:tournament_id/:round_number/problem", ProblemLive, :show
+      live "/tournament/:tournament_id/:round_number/submit", SubmitLive, :show
     end
 
     get "/:tournament_id/:round_number/:filename", ProblemFileController, :serve_statement_file

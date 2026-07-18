@@ -172,7 +172,7 @@ defmodule CodeDuelsWeb.CoreComponents do
 
     assigns
     |> assign(field: nil, id: assigns.id || field.id)
-    |> assign(:errors, Enum.map(errors, &translate_error(&1)))
+    |> assign(:errors, Enum.map(errors, &elem(&1, 0)))
     |> assign_new(:name, fn -> if assigns.multiple, do: field.name <> "[]", else: field.name end)
     |> assign_new(:value, fn -> field.value end)
     |> input()
@@ -213,11 +213,15 @@ defmodule CodeDuelsWeb.CoreComponents do
         <select
           id={@id}
           name={@name}
-          class={[@class || "w-full select", @errors != [] && (@error_class || "select-error")]}
+          class={[
+            @class || "w-full select",
+            @errors != [] && (@error_class || "select-error"),
+            @prompt && @value in ["", nil] && "text-base-content/50"
+          ]}
           multiple={@multiple}
           {@rest}
         >
-          <option :if={@prompt} value="">{@prompt}</option>
+          <option :if={@prompt} value="" class="text-base-content/50">{@prompt}</option>
           {Phoenix.HTML.Form.options_for_select(@options, @value)}
         </select>
       </label>
@@ -524,6 +528,27 @@ defmodule CodeDuelsWeb.CoreComponents do
       >
         Отправить
       </.link>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders a styled error/success message box.
+
+  ## Examples
+
+      <.error_box message={"some error"} style={"background-color: var(--color-error);"} />
+  """
+  attr :message, :string, required: true
+  attr :style, :string, required: true
+
+  def error_box(assigns) do
+    ~H"""
+    <div
+      class="error_box card p-2"
+      style={"border-radius: 4px; align-items: center; justify-content: center; border-radius: var(--radius-field); white-space: normal; #{@style}"}
+    >
+      {@message}
     </div>
     """
   end

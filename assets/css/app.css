@@ -43,7 +43,8 @@
     --color-warning: oklch(0.77 0.12 75);
     --color-warning-content: oklch(0.15 0.01 75);
     --color-error: oklch(0.45 0.12 10);
-    --color-error-content: oklch(0.15 0.01 75);
+    --color-error-content: oklch(0.95 0.01 10);
+    --color-form-border: oklch(0.50 0.03 265);
     --radius-selector: 0.5rem;
     --radius-field: 0.25rem;
     --radius-box: 0.5rem;
@@ -52,6 +53,18 @@
     --border: 1px;
     --depth: 1;
     --noise: 0;
+    --color-player-a: #7aa2f7;
+    --color-player-b: #f7768e;
+    --color-draw: #e0af68;
+  }
+}
+
+@layer base {
+  [data-theme="nord"] {
+    --color-form-border: oklch(0.73 0.03 230);
+    --color-player-a: #5e81ac;
+    --color-player-b: #bf616a;
+    --color-draw: #ebcb8b;
   }
 }
 
@@ -90,3 +103,9 @@
 }
 
 /* This file is for your main application CSS */
+
+.text-player-a { color: var(--color-player-a); }
+.text-player-b { color: var(--color-player-b); }
+.text-draw { color: var(--color-draw); }
+.border-form {border-color: var(--color-form-border)}
+.border-error {border-color: var(--color-error)}

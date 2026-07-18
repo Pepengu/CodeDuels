@@ -3,12 +3,7 @@ defmodule CodeDuelsWeb.HomePageLive do
 
   def render(assigns) do
     ~H"""
-    <div class="container mx-auto px bg-secondary rounded-box my-8">
-      <.live_component
-        module={CodeDuelsWeb.ComingSoonPopup}
-        id="coming-soon"
-      />
-    </div>
+    <Layouts.app flash={@flash} current_user={@current_user}></Layouts.app>
     """
   end
 
@@ -21,31 +16,14 @@ defmodule CodeDuelsWeb.HomePageLive do
   end
 
   def handle_event("show_popup", %{"title" => title, "message" => message}, socket) do
-    send_update(CodeDuelsWeb.ComingSoonPopup,
-      id: "coming-soon",
-      action: :show,
-      title: title,
-      message: message
-    )
-
     {:noreply, socket}
   end
 
   def handle_info(:close_popup, socket) do
-    send_update(CodeDuelsWeb.ComingSoonPopup,
-      id: "coming-soon",
-      action: :hide
-    )
-
     {:noreply, socket}
   end
 
   def handle_info(:show_popup, socket) do
-    send_update(CodeDuelsWeb.ComingSoonPopup,
-      id: "coming-soon",
-      action: :show
-    )
-
     {:noreply, socket}
   end
 end
