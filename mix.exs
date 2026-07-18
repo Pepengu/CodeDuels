@@ -47,6 +47,7 @@ defmodule CodeDuels.MixProject do
       {:postgrex, ">= 0.0.0"},
       {:phoenix_html, "~> 4.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
+      {:file_system, "~> 1.0", only: :dev},
       {:phoenix_live_view, "~> 1.1.0"},
       {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.3"},
@@ -69,7 +70,8 @@ defmodule CodeDuels.MixProject do
       {:bandit, "~> 1.5"},
       {:uuid, "~> 1.1"},
       {:sweet_xml, "~> 0.7"},
-      {:floki, ">= 0.35.0"}
+      {:floki, ">= 0.35.0"},
+      {:html_sanitize_ex, "~> 1.5"}
     ]
   end
 
@@ -86,8 +88,9 @@ defmodule CodeDuels.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["compile", "tailwind code_duels", "esbuild code_duels"],
+      "assets.build": ["typst.compile", "compile", "tailwind code_duels", "esbuild code_duels"],
       "assets.deploy": [
+        "typst.compile",
         "tailwind code_duels --minify",
         "esbuild code_duels --minify",
         "phx.digest"

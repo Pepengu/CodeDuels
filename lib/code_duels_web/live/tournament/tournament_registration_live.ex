@@ -4,7 +4,7 @@ defmodule CodeDuelsWeb.TournamentRegistrationLive do
   import CodeDuelsWeb.FormBuilder
   alias CodeDuelsWeb.FormBuilder
 
-  def fields do
+  def fields(tournament_id) do
     [
       %{name: :surname, type: :text, label: "Фамилия", placeholder: "Иванов", required: true},
       %{name: :name, type: :text, label: "Имя", placeholder: "Иван", required: true},
@@ -155,8 +155,8 @@ defmodule CodeDuelsWeb.TournamentRegistrationLive do
         name: :agree_to_rules,
         type: :checkbox,
         label_prefix: "Я ознакомлен с ",
-        link_text: "регламентом",
-        link_url: "/regulations",
+        link_text: "положением",
+        link_url: "/tournament/#{tournament_id}/regulation",
         required: true
       }
     ]
@@ -219,7 +219,7 @@ defmodule CodeDuelsWeb.TournamentRegistrationLive do
       socket
       |> assign(:tournament, tournament)
       |> assign(:form, form)
-      |> assign(:fields, fields())
+      |> assign(:fields, fields(id))
       |> assign(:error, :none)
 
     {:ok, socket}

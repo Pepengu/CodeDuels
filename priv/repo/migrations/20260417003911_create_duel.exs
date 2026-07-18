@@ -11,7 +11,7 @@ defmodule CodeDuels.Repo.Migrations.CreateDuel do
       add :scores, {:array, :integer},
         default: [0, 0, 0, 0, 0],
         comment:
-          "-score for playerA, score for playerB, 0 for none. The score value shows the penality"
+          "-score for playerA, score for playerB, 0 for none. The score value shows the penalty"
 
       add :status, :string, default: "pending"
 

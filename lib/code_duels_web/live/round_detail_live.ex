@@ -84,7 +84,7 @@ defmodule CodeDuelsWeb.RoundDetailLive do
                 <div class="card bg-base-200 shadow-xl mt-6">
                   <div class="card-body">
                     <.link
-                      navigate={~p"/#{@tournament_id}/#{@round_number}/submit"}
+                      navigate={"/tournament/#{@tournament_id}/#{@round_number}/submit"}
                       class="btn btn-primary btn-block"
                     >
                       Отправить решение
@@ -110,7 +110,7 @@ defmodule CodeDuelsWeb.RoundDetailLive do
                 <div class="flex flex-col gap-4">
                   <%= for {problem, idx} <- Enum.with_index(@problems) do %>
                     <.link
-                      navigate={~p"/#{@tournament_id}/#{@round_number}/problem?letter=#{<<idx + ?A>>}"}
+                      navigate={"/tournament/#{@tournament_id}/#{@round_number}/problem?letter=#{<<idx + ?A>>}"}
                       class="block"
                     >
                       <div class="card bg-base-200 shadow-md hover:shadow-lg transition-shadow cursor-pointer">
@@ -162,7 +162,7 @@ defmodule CodeDuelsWeb.RoundDetailLive do
                 <div class="card bg-base-200 shadow-xl mt-6">
                   <div class="card-body">
                     <.link
-                      navigate={~p"/#{@tournament_id}/#{@round_number}/submit"}
+                      navigate={"/tournament/#{@tournament_id}/#{@round_number}/submit"}
                       class="btn btn-primary btn-block"
                     >
                       Отправить решение

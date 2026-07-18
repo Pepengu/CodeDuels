@@ -30,7 +30,8 @@ config :code_duels, CodeDuelsWeb.Endpoint,
     ),
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:code_duels, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:code_duels, ~w(--watch)]}
+    tailwind: {Tailwind, :install_and_run, [:code_duels, ~w(--watch)]},
+    typst: {Mix.Tasks.TypstWatcher, :start_link, []}
   ]
 
 # ## SSL Support
@@ -63,7 +64,8 @@ config :code_duels, CodeDuelsWeb.Endpoint,
     patterns: [
       ~r"priv/static/(?!uploads/).*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
-      ~r"lib/code_duels_web/(?:controllers|live|components|router)/?.*\.(ex|heex)$"
+      ~r"lib/code_duels_web/(?:controllers|live|components|router)/?.*\.(ex|heex)$",
+      ~r"priv/regulations/.*\.typ$"
     ]
   ]
 

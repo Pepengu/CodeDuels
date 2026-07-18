@@ -37,7 +37,7 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
                   </tr>
                   <tr>
                     <td class="font-semibold">Штраф</td>
-                    <td>{@tournament.penality}</td>
+                    <td>{@tournament.penalty}</td>
                   </tr>
                   <tr>
                     <td class="font-semibold">Макс. участников</td>
@@ -95,7 +95,7 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
       is_unlocked_by_time ->
         ~H"""
         <.link
-          navigate={"/#{@tournament.id}/#{@round_number}"}
+          navigate={"/tournament/#{@tournament.id}/#{@round_number}"}
           class="card bg-base-200 hover:bg-base-300 shadow-md hover:shadow-lg transition-all"
         >
           <div class="card-body flex flex-row items-center justify-between py-3">
@@ -116,7 +116,7 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
 
         ~H"""
         <.link
-          navigate={"/#{@tournament.id}/#{@round_number}"}
+          navigate={"/tournament/#{@tournament.id}/#{@round_number}"}
           class="card bg-base-300 shadow-md opacity-70 hover:opacity-90"
         >
           <div class="card-body flex flex-row items-center justify-between py-3">

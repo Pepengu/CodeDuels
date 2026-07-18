@@ -12,7 +12,7 @@ defmodule CodeDuelsWeb.PairingsLive do
         <div class="flex flex-wrap gap-1 mb-0">
           <%= for round <- @available_rounds do %>
             <.link
-              navigate={"/#{@tournament.id}/pairings?round=#{round}"}
+              navigate={"/tournament/#{@tournament.id}/pairings?round=#{round}"}
               class={"px-4 py-2 rounded-t-lg font-medium transition-colors #{if @selected_round == round, do: "bg-base-100 text-base-content border-t border-x border-base-300", else: "bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content"}"}
             >
               Раунд {round}
@@ -54,13 +54,13 @@ defmodule CodeDuelsWeb.PairingsLive do
                           {player_name(duel.player_a)}
                         </td>
                         <td class={current_user_class(nil, is_current_user)}>
-                          {player_penality(duel.scores, :A)}
+                          {player_penalty(duel.scores, :A)}
                         </td>
                         <td class={current_user_class("text-red-500", is_current_user)}>
                           {player_name(duel.player_b)}
                         </td>
                         <td class={current_user_class(nil, is_current_user)}>
-                          {player_penality(duel.scores, :B)}
+                          {player_penalty(duel.scores, :B)}
                         </td>
                         <%= for i <- 0..(@tournament.problems_per_round || 5) - 1 do %>
                           <% score = problem_display(duel.scores, i) %>
@@ -127,11 +127,11 @@ defmodule CodeDuelsWeb.PairingsLive do
     end
   end
 
-  defp player_penality(scores, :A) do
+  defp player_penalty(scores, :A) do
     "#{scores |> Enum.reduce(0, fn val, acc -> if val < 0, do: acc - val, else: acc end)}"
   end
 
-  defp player_penality(scores, :B) do
+  defp player_penalty(scores, :B) do
     "#{scores |> Enum.reduce(0, fn val, acc -> if val > 0, do: acc + val, else: acc end)}"
   end
 

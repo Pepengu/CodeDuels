@@ -111,7 +111,7 @@ defmodule CodeDuelsWeb.SubmissionsLive do
       {:ok,
        socket
        |> put_flash(:error, "Вы не участвуете в дуэли этого раунда")
-       |> push_navigate(to: "/#{tournament_id}/#{round_number}")}
+       |> push_navigate(to: "/tournament/#{tournament_id}/#{round_number}")}
     else
       problems = CodeDuels.Tournaments.get_problemset(round.problemset)
       problem_ids = Enum.map(problems, & &1.id)

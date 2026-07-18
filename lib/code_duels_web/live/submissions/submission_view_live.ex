@@ -8,7 +8,7 @@ defmodule CodeDuelsWeb.SubmissionViewLive do
     <Layouts.app flash={@flash} current_user={@current_user}>
       <div class="container mx-auto px-4 py-8">
         <.link
-          navigate={"/#{@tournament_id}/#{@round_number}/submissions"}
+          navigate={"/tournament/#{@tournament_id}/#{@round_number}/submissions"}
           class="link link-hover text-sm opacity-70 mb-4 inline-block"
         >
           &larr; Назад к посылкам
@@ -88,7 +88,7 @@ defmodule CodeDuelsWeb.SubmissionViewLive do
                         <td class="font-semibold">Задача</td>
                         <td>
                           <.link
-                            navigate={"/#{@tournament_id}/#{@round_number}/problem?letter=#{@submission.problem_letter}"}
+                            navigate={"/tournament/#{@tournament_id}/#{@round_number}/problem?letter=#{@submission.problem_letter}"}
                             class="link link-hover text-primary"
                           >
                             {@submission.problem_letter}. {@submission.problem.title}

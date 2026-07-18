@@ -36,7 +36,7 @@ defmodule CodeDuelsWeb.SubmissionsTable do
                 <tr>
                   <td :if={@show_problem?} class="font-semibold text-center">
                     <.link
-                      navigate={"/#{@tournament_id}/#{@round_number}/problem?letter=#{sub.problem_letter}"}
+                      navigate={"/tournament/#{@tournament_id}/#{@round_number}/problem?letter=#{sub.problem_letter}"}
                       class="link link-hover text-primary"
                     >
                       {sub.problem_letter}
@@ -46,7 +46,7 @@ defmodule CodeDuelsWeb.SubmissionsTable do
                   <td class="opacity-70">{format_datetime(sub.inserted_at)}</td>
                   <td class={submission_status_class(sub)}>
                     <.link
-                      navigate={"/#{@tournament_id}/#{@round_number}/submissions/#{sub.id}"}
+                      navigate={"/tournament/#{@tournament_id}/#{@round_number}/submissions/#{sub.id}"}
                       class="hover:underline"
                     >
                       {submission_status_text(sub)}

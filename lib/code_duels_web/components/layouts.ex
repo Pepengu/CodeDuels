@@ -19,8 +19,9 @@ defmodule CodeDuelsWeb.Layouts do
       <div class="navbar-start">
         <a class="text-2xl font-bold text-primary" href="/">⚡ CodeDuels</a>
       </div>
-      <div class="navbar-center lg:flex">
-        <.link navigate="/tournament/" class="btn "> Турниры </.link>
+      <div class="navbar-center lg:flex gap-2">
+        <.link navigate="/tournament/" class="btn">Турниры</.link>
+        <.link navigate="/regulations" class="btn">Положение</.link>
       </div>
       <div class="navbar-end gap-2">
         <%= if @current_user do %>

@@ -107,7 +107,7 @@ defmodule CodeDuelsWeb.SubmitLive do
                       </tr>
                       <tr>
                         <td class="font-semibold">Штраф</td>
-                        <td>{@tournament.penality}</td>
+                        <td>{@tournament.penalty}</td>
                       </tr>
                     </tbody>
                   </table>

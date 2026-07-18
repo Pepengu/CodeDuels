@@ -7,7 +7,7 @@ defmodule CodeDuels.Tournaments.Tournament do
     field :problems_per_round, :integer
     field :round_time, :integer
     field :intermission_time, :integer
-    field :penality, :integer
+    field :penalty, :integer
     field :scores, {:array, :integer}
     field :max_participants, :integer
     field :name, :string
@@ -30,7 +30,7 @@ defmodule CodeDuels.Tournaments.Tournament do
       :problems_per_round,
       :round_time,
       :intermission_time,
-      :penality,
+      :penalty,
       :scores,
       :max_participants,
       :name,

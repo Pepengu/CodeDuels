@@ -10,7 +10,7 @@ defmodule CodeDuelsWeb.ProblemLive do
         <Layouts.app flash={@flash} current_user={@current_user}>
           <.live_component module={CodeDuelsWeb.RoundNotificationPopup} id="round-notification" />
           <div class="container mx-auto px-4 py-8">
-            <.link navigate={"/#{@tournament_id}/#{@round_number}"} class="btn btn-ghost mb-4">
+            <.link navigate={"/tournament/#{@tournament_id}/#{@round_number}"} class="btn btn-ghost mb-4">
               &larr; К раунду
             </.link>
 
@@ -39,7 +39,7 @@ defmodule CodeDuelsWeb.ProblemLive do
         ~H"""
         <Layouts.app flash={@flash} current_user={@current_user}>
           <div class="container mx-auto px-4 py-8">
-            <.link navigate={"/#{@tournament_id}/#{@round_number}"} class="btn btn-ghost mb-4">
+            <.link navigate={"/tournament/#{@tournament_id}/#{@round_number}"} class="btn btn-ghost mb-4">
               &larr; К раунду
             </.link>
 
@@ -57,17 +57,20 @@ defmodule CodeDuelsWeb.ProblemLive do
         ~H"""
         <Layouts.app flash={@flash} current_user={@current_user}>
           <div class="container mx-auto px-4 py-8">
-            <.link navigate={"/#{@tournament_id}/#{@round_number}"} class="btn btn-ghost mb-4">
+            <.link navigate={"/tournament/#{@tournament_id}/#{@round_number}"} class="btn btn-ghost mb-4">
               &larr; К раунду
             </.link>
 
             <div class="mb-6">
-              <.link navigate={"/#{@tournament_id}"} class="text-lg text-base-content/70 hover:underline">
+              <.link
+                navigate={"/tournament/#{@tournament_id}"}
+                class="text-lg text-base-content/70 hover:underline"
+              >
                 {@tournament.name}
               </.link>
               <span class="text-lg text-base-content/50 mx-2">&rsaquo;</span>
               <.link
-                navigate={"/#{@tournament_id}/#{@round_number}"}
+                navigate={"/tournament/#{@tournament_id}/#{@round_number}"}
                 class="text-lg text-base-content/70 hover:underline"
               >
                 Раунд {@round_number}
@@ -182,7 +185,7 @@ defmodule CodeDuelsWeb.ProblemLive do
         <div class="space-y-1">
           <%= for problem <- @problems do %>
             <.link
-              navigate={"/#{@tournament_id}/#{@round_number}/problem?letter=#{problem.letter}"}
+              navigate={"/tournament/#{@tournament_id}/#{@round_number}/problem?letter=#{problem.letter}"}
               class={[
                 "block px-3 py-2 rounded-lg transition-colors",
                 if(problem.letter == @problem_letter,
@@ -242,7 +245,7 @@ defmodule CodeDuelsWeb.ProblemLive do
   defp sidebar_submit_button(assigns) do
     ~H"""
     <.link
-      navigate={"/#{@tournament_id}/#{@round_number}/submit?letter=#{@problem_letter}"}
+      navigate={"/tournament/#{@tournament_id}/#{@round_number}/submit?letter=#{@problem_letter}"}
       class="btn btn-secondary btn-block mt-4"
     >
       <span class="font-semibold text-center">Отправить решение</span>

@@ -15,9 +15,13 @@ defmodule CodeDuels.Tournaments do
   def get_tournament!(id), do: Repo.get!(Tournament, id)
 
   def create_tournament(attrs \\ %{}) do
-    %Tournament{}
-    |> Tournament.changeset(attrs)
-    |> Repo.insert()
+    with {:ok, tournament} <-
+           %Tournament{}
+           |> Tournament.changeset(attrs)
+           |> Repo.insert() do
+      Task.start(fn -> CodeDuels.Typst.compile_for_tournament(tournament) end)
+      {:ok, tournament}
+    end
   end
 
   def list_participants(tournament_id) do

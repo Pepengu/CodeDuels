@@ -6,6 +6,7 @@
 @source "../js";
 @source "../../lib/code_duels_web";
 @import "./problem-statement.css";
+@import "./typst-content.css";
 @import "../vendor/highlight-theme.css";
 
 

@@ -124,7 +124,7 @@ tournament =
           problems_per_round: 5,
           round_time: 2400,
           intermission_time: 300,
-          penality: 5,
+          penalty: 5,
           scores: [1, 1, 2, 2, 3],
           max_participants: 32,
           is_open: true,

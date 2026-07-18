@@ -42,6 +42,15 @@ defmodule CodeDuelsWeb.TournamentPageLive do
                 </div>
 
                 <div class="card-actions mt-6">
+                  <.link
+                    navigate={"/tournament/#{tournament.id}/regulation"}
+                    class="btn btn-primary"
+                  >
+                    Положение
+                  </.link>
+                </div>
+
+                <div class="card-actions mt-6">
                   <.link navigate={"/tournament/#{tournament.id}"} class="btn btn-primary">
                     Подробнее
                   </.link>

@@ -22,7 +22,12 @@ defmodule CodeDuelsWeb.Router do
     post "/login", AuthController, :create
     get "/logout", AuthController, :delete
 
+    get "/regulations", RegulationsController, :show
+    get "/regulations.pdf", RegulationsController, :pdf
+
     pipe_through :redirect_if_not_authenticated
+
+    get "/tournament/:id/regulation.pdf", RegulationPdfController, :show
 
     live_session :default,
       on_mount: {CodeDuelsWeb.LiveAuth, :default} do
@@ -32,6 +37,8 @@ defmodule CodeDuelsWeb.Router do
       live "/tournament/:id/registration", TournamentRegistrationLive, :show
       live "/tournament/:id/standings", StandingsLive, :show
       live "/tournament/:id/pairings", PairingsLive, :show
+      live "/tournament/:id/regulation", RegulationLive, :show
+
       live "/tournament/:tournament_id/:round_number/submissions", SubmissionsLive, :show
 
       live "/tournament/:tournament_id/:round_number/submissions/:submission_id",

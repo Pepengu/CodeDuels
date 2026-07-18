@@ -22,6 +22,7 @@
             postgresql
             tailwindcss_4
             esbuild
+            typst
           ];
 
           installPhase = ''
@@ -122,6 +123,7 @@
 
               tailwindcss_4
               esbuild
+              typst
 
               inotify-tools
               watchman

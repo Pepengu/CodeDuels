@@ -462,6 +462,7 @@ defmodule CodeDuelsWeb.CoreComponents do
         "rounds" -> "Главная"
         "standings" -> "Таблица"
         "pairings" -> "Пары"
+        "regulation" -> "Положение"
         _ -> nil
       end
 
@@ -473,22 +474,28 @@ defmodule CodeDuelsWeb.CoreComponents do
 
     <div class="tabs tabs-boxed mb-6">
       <.link
-        navigate={"/#{@tournament.id}"}
+        navigate={"/tournament/#{@tournament.id}"}
         class={"tab #{if @active_tab == "rounds", do: "tab-active"}"}
       >
         Главная
       </.link>
       <.link
-        navigate={"/#{@tournament.id}/standings"}
+        navigate={"/tournament/#{@tournament.id}/standings"}
         class={"tab #{if @active_tab == "standings", do: "tab-active"}"}
       >
         Таблица
       </.link>
       <.link
-        navigate={"/#{@tournament.id}/pairings"}
+        navigate={"/tournament/#{@tournament.id}/pairings"}
         class={"tab #{if @active_tab == "pairings", do: "tab-active"}"}
       >
         Пары
+      </.link>
+      <.link
+        navigate={"/tournament/#{@tournament.id}/regulation"}
+        class={"tab #{if @active_tab == "regulation", do: "tab-active"}"}
+      >
+        Положение
       </.link>
     </div>
     """
@@ -511,19 +518,19 @@ defmodule CodeDuelsWeb.CoreComponents do
 
     <div class="tabs tabs-boxed mb-6">
       <.link
-        navigate={"/#{@tournament.id}/#{@round_number}"}
+        navigate={"/tournament/#{@tournament.id}/#{@round_number}"}
         class={"tab #{if @active_tab == "problems", do: "tab-active"}"}
       >
         Задачи
       </.link>
       <.link
-        navigate={"/#{@tournament.id}/#{@round_number}/submissions"}
+        navigate={"/tournament/#{@tournament.id}/#{@round_number}/submissions"}
         class={"tab #{if @active_tab == "submissions", do: "tab-active"}"}
       >
         Посылки
       </.link>
       <.link
-        navigate={"/#{@tournament.id}/#{@round_number}/submit"}
+        navigate={"/tournament/#{@tournament.id}/#{@round_number}/submit"}
         class={"tab #{if @active_tab == "submit", do: "tab-active"}"}
       >
         Отправить
