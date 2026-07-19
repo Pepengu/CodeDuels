@@ -14,6 +14,51 @@ defmodule CodeDuels.Runner.Docker do
     ]
   end
 
+  @impl true
+  def language_info do
+    %{
+      "cpp" => %{
+        display: "C++",
+        color: "#00599C",
+        logo: "cplusplus",
+        highlight: "cpp"
+      },
+      "gnu_cpp17" => %{
+        display: "GNU C++ 17",
+        color: "#00599C",
+        logo: "cplusplus",
+        highlight: "cpp"
+      },
+      "gnu_cpp23" => %{
+        display: "GNU C++ 23",
+        color: "#00599C",
+        logo: "cplusplus",
+        highlight: "cpp"
+      },
+      "visual_cpp" => %{
+        display: "Visual C++",
+        color: "#00599C",
+        logo: "cplusplus",
+        highlight: "cpp"
+      },
+      "python" => %{display: "Python3", color: "#3776AB", logo: "python", highlight: "python"},
+      "pypy" => %{display: "PyPy3", color: "#3776AB", logo: "python", highlight: "python"},
+      "java" => %{display: "Java", color: "#ED8B00", logo: "java", highlight: "java"},
+      "go" => %{display: "Go", color: "#00ADD8", logo: "go", highlight: "go"}
+    }
+  end
+
+  @impl true
+  def language_family(language) do
+    case language do
+      "gnu_cpp17" -> "cpp"
+      "gnu_cpp23" -> "cpp"
+      "visual_cpp" -> "cpp"
+      "pypy" -> "python"
+      l -> l
+    end
+  end
+
   @spec to_verdict(String.t()) :: atom()
   defp to_verdict(verdict) do
     case verdict do
@@ -47,14 +92,8 @@ defmodule CodeDuels.Runner.Docker do
 
   @impl true
   def language_highlight_class(language) do
-    case String.to_existing_atom(language) do
-      :gnu_cpp17 -> "cpp"
-      :gnu_cpp23 -> "cpp"
-      :visual_cpp -> "cpp"
-      :python -> "python"
-      :pypy -> "python"
-      :java -> "java"
-      :go -> "go"
+    case Map.get(language_info(), language) do
+      %{highlight: hl} -> hl
       _ -> ""
     end
   end

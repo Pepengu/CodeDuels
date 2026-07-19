@@ -42,7 +42,17 @@ defmodule CodeDuelsWeb.SubmissionsTable do
                       {sub.problem_letter}
                     </.link>
                   </td>
-                  <td>{language_display(sub.language)}</td>
+                  <td>
+                    <div class="flex items-center gap-2 whitespace-nowrap">
+                      <img
+                        :if={language_logo_url(sub.language)}
+                        src={language_logo_url(sub.language)}
+                        class="w-4 h-4 shrink-0"
+                        alt=""
+                      />
+                      {language_display(sub.language)}
+                    </div>
+                  </td>
                   <td class="opacity-70">{format_datetime(sub.inserted_at)}</td>
                   <td class={submission_status_class(sub)}>
                     <.link

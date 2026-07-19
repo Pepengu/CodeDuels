@@ -9,6 +9,8 @@ defmodule CodeDuelsWeb.SubmitLive do
 
   @adapter Application.compile_env(:code_duels, :runner)[:adapter]
 
+  @language_info @adapter.language_info()
+
   @languages @adapter.languages()
              |> Enum.map(fn {internal, display} -> {display, to_string(internal)} end)
 
@@ -32,13 +34,62 @@ defmodule CodeDuelsWeb.SubmitLive do
                   <label class="label">
                     <span class="label-text font-semibold">Язык</span>
                   </label>
-                  <.input
-                    field={@form[:language]}
-                    type="select"
-                    options={@languages}
-                    class="select-bordered select w-full"
-                    phx-hook="LanguageSelectHook"
+                  <input
+                    type="hidden"
+                    name="submission[language]"
+                    value={@form.params["language"] || ""}
                   />
+                  <div
+                    id="language-dropdown"
+                    phx-hook="LanguageSelectHook"
+                    class="relative"
+                    data-value={@form.params["language"] || ""}
+                  >
+                    <button
+                      type="button"
+                      class="select select-bordered w-full flex items-center justify-between"
+                    >
+                      <span class="flex items-center gap-2">
+                        <img
+                          :if={@form.params["language"] && @language_info[@form.params["language"]]}
+                          src={language_logo_url(@form.params["language"])}
+                          class="w-5 h-5"
+                          alt=""
+                        />
+                        {if @form.params["language"] && @language_info[@form.params["language"]],
+                          do: @language_info[@form.params["language"]].display,
+                          else: "— Выберите язык —"}
+                      </span>
+                      <svg
+                        class="w-4 h-4 opacity-50"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fill-rule="evenodd"
+                          d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                          clip-rule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                    <ul class="absolute z-50 mt-1 w-full bg-base-100 border border-base-300 rounded-lg shadow-lg max-h-60 overflow-auto hidden">
+                      <%= for {key, info} <- Enum.sort_by(@language_info, fn {_, v} -> v.display end) do %>
+                        <li
+                          class="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-base-200 transition-colors"
+                          data-value={key}
+                        >
+                          <img
+                            :if={info.logo}
+                            src={language_logo_url(key)}
+                            class="w-5 h-5 shrink-0"
+                            alt=""
+                          />
+                          {info.display}
+                        </li>
+                      <% end %>
+                    </ul>
+                  </div>
                 </div>
 
                 <div class="form-control">
@@ -249,6 +300,7 @@ defmodule CodeDuelsWeb.SubmitLive do
        round_time_minutes: round_time_minutes,
        time_remaining: round_state.time_remaining,
        languages: @languages,
+       language_info: @language_info,
        form: form,
        error: :none,
        participant_id: participant_id,
@@ -262,11 +314,6 @@ defmodule CodeDuelsWeb.SubmitLive do
     language = params["language"]
     highlight_class = if language && language != "", do: highlight_class(language), else: ""
     {:noreply, assign(socket, form: form, highlight_class: highlight_class)}
-  end
-
-  def handle_event("restore_language", %{"language" => lang}, socket) do
-    form = %{socket.assigns.form | params: Map.put(socket.assigns.form.params, "language", lang)}
-    {:noreply, assign(socket, form: form)}
   end
 
   def handle_event("validate_submit", _params, socket) do

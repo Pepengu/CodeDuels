@@ -20,12 +20,14 @@ defmodule CodeDuelsWeb.Layouts do
         <a class="text-2xl font-bold text-primary" href="/">⚡ CodeDuels</a>
       </div>
       <div class="navbar-center lg:flex gap-2">
-        <.link navigate="/tournament/" class="btn">Турниры</.link>
+        <.link navigate="/tournament" class="btn">Турниры</.link>
         <.link navigate="/regulations" class="btn">Положение</.link>
       </div>
       <div class="navbar-end gap-2">
         <%= if @current_user do %>
-          <a>{@current_user.name || @current_user.username}</a>
+          <.link navigate={~p"/profile/#{@current_user.id}"} class="btn">
+            {@current_user.name || @current_user.username}
+          </.link>
         <% end %>
         <.theme_toggle />
       </div>

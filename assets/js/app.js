@@ -139,13 +139,42 @@ Hooks.MathJaxHook = {
 
 Hooks.LanguageSelectHook = {
   mounted() {
+    this.button = this.el.querySelector("button")
+    this.list = this.el.querySelector("ul")
+    this.input = this.el.parentElement.querySelector('input[name="submission[language]"]')
+    this.items = this.el.querySelectorAll("li[data-value]")
+
     const saved = localStorage.getItem("last_language")
-    if (saved && saved !== this.el.value) {
-      this.pushEvent("restore_language", {language: saved})
+    if (saved) {
+      this.selectValue(saved)
     }
-    this.el.addEventListener("change", () => {
-      localStorage.setItem("last_language", this.el.value)
+
+    this.button.addEventListener("click", (e) => {
+      e.preventDefault()
+      this.list.classList.toggle("hidden")
     })
+
+    this.items.forEach((item) => {
+      item.addEventListener("click", () => {
+        const val = item.dataset.value
+        this.selectValue(val)
+        localStorage.setItem("last_language", val)
+        this.list.classList.add("hidden")
+      })
+    })
+
+    document.addEventListener("click", (e) => {
+      if (!this.el.contains(e.target)) {
+        this.list.classList.add("hidden")
+      }
+    })
+  },
+  selectValue(val) {
+    if (this.input) {
+      this.input.value = val
+      this.input.dispatchEvent(new Event("change", {bubbles: true}))
+    }
+    this.el.dataset.value = val
   }
 }
 

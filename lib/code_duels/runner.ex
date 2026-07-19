@@ -22,7 +22,16 @@ defmodule CodeDuels.Runner do
           test_cases: [test_case()]
         }
 
+  @type language_info :: %{
+          display: String.t(),
+          color: String.t(),
+          logo: String.t() | nil,
+          highlight: String.t()
+        }
+
   @callback languages() :: keyword(String.t())
+  @callback language_info() :: %{String.t() => language_info()}
+  @callback language_family(language :: String.t()) :: String.t()
   @callback language_highlight_class(language :: String.t()) :: String.t()
   @callback submit_code(
               source_code :: String.t(),

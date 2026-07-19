@@ -97,7 +97,17 @@ defmodule CodeDuelsWeb.SubmissionViewLive do
                       </tr>
                       <tr>
                         <td class="font-semibold">Язык</td>
-                        <td>{language_display(@submission.language)}</td>
+                        <td>
+                          <div class="flex items-center gap-1.5">
+                            <img
+                              :if={language_logo_url(@submission.language)}
+                              src={language_logo_url(@submission.language)}
+                              class="w-4 h-4"
+                              alt=""
+                            />
+                            {language_display(@submission.language)}
+                          </div>
+                        </td>
                       </tr>
                       <tr>
                         <td class="font-semibold">Отправлено</td>

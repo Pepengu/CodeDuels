@@ -1,12 +1,38 @@
 defmodule CodeDuelsWeb.Helpers.SubmissionHelpers do
   @adapter Application.compile_env(:code_duels, :runner)[:adapter]
 
-  @language_map @adapter.languages()
-                |> Enum.map(fn {internal, display} -> {to_string(internal), display} end)
-                |> Map.new()
+  @language_info @adapter.language_info()
 
   def language_display(internal) do
-    Map.get(@language_map, internal, internal)
+    case Map.get(@language_info, internal) do
+      %{display: display} -> display
+      _ -> internal
+    end
+  end
+
+  def language_color(internal) do
+    case Map.get(@language_info, internal) do
+      %{color: color} -> color
+      _ -> "#6B7280"
+    end
+  end
+
+  def language_logo(internal) do
+    case Map.get(@language_info, internal) do
+      %{logo: logo} -> logo
+      _ -> nil
+    end
+  end
+
+  def language_logo_url(internal) do
+    case language_logo(internal) do
+      nil -> nil
+      key -> "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/#{key}/#{key}-original.svg"
+    end
+  end
+
+  def language_family(internal) do
+    @adapter.language_family(internal)
   end
 
   def submission_status_class(sub) do
