@@ -7,6 +7,8 @@ defmodule CodeDuels.Typst do
   @base "priv/regulations"
   @cache_dir "priv/regulations/cache"
 
+  import Ecto.Query
+
   def compile do
     source = Path.expand(@source)
     base = Path.expand(@base)
@@ -17,12 +19,25 @@ defmodule CodeDuels.Typst do
     end
   end
 
-  def compile_for_tournament(%{id: id, name: name} = tournament) do
+  def compile_for_tournament(%{id: id, name: name} = tournament, round_scores \\ nil) do
     source = Path.expand(@source)
     cache = Path.expand(Path.join(@cache_dir, to_string(id)))
 
     with :ok <- check_typst(),
          :ok <- File.mkdir_p(cache) do
+      round_scores =
+        round_scores ||
+          case CodeDuels.Repo.one(
+                 from r in CodeDuels.Tournaments.Round,
+                   where: r.tournament_id == ^id,
+                   order_by: [asc: r.round_number],
+                   limit: 1,
+                   select: r.scores
+               ) do
+            scores when is_list(scores) -> scores
+            _ -> [1, 1, 2, 2, 3]
+          end
+
       inputs = [
         "--input",
         "tournament_name=#{name}",
@@ -37,7 +52,7 @@ defmodule CodeDuels.Typst do
         "--input",
         "penalty=#{tournament.penalty}",
         "--input",
-        "scores=#{Enum.join(tournament.scores || [1, 1, 2, 2, 3], ",")}"
+        "scores=#{Enum.join(round_scores, ",")}"
       ]
 
       html_out = Path.join(cache, "regulations.html")

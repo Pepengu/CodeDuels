@@ -36,7 +36,7 @@ defmodule CodeDuelsWeb.PairingsLive do
                         <th>
                           <div>Задача {i + 1}</div>
                           <div class="text-xs text-gray-500 font-normal">
-                            Вес {Enum.at(@tournament.scores, i)}
+                            Вес {Enum.at(@round_scores, i)}
                           </div>
                         </th>
                       <% end %>
@@ -79,7 +79,7 @@ defmodule CodeDuelsWeb.PairingsLive do
                             end}
                           </td>
                         <% end %>
-                        <% score = duel_total(duel.scores, @tournament.scores) %>
+                        <% score = duel_total(duel.scores, @round_scores) %>
                         <td class={
                           current_user_class("font-mono font-semibold", is_current_user) ++
                             if score != "-:-" do
@@ -186,13 +186,16 @@ defmodule CodeDuelsWeb.PairingsLive do
     selected_round =
       if round_str, do: String.to_integer(round_str), else: List.first(available_rounds)
 
+    round_scores = load_round_scores(tournament.id, selected_round)
+
     {:ok,
      socket
      |> assign(:tournament, tournament)
      |> assign(:duels, duels)
      |> assign(:duels_by_round, duels_by_round)
      |> assign(:available_rounds, available_rounds)
-     |> assign(:selected_round, selected_round)}
+     |> assign(:selected_round, selected_round)
+     |> assign(:round_scores, round_scores)}
   end
 
   def mount(%{"id" => id}, _session, socket) do
@@ -208,6 +211,7 @@ defmodule CodeDuelsWeb.PairingsLive do
 
     available_rounds = Map.keys(duels_by_round)
     selected_round = List.first(available_rounds)
+    round_scores = load_round_scores(tournament.id, selected_round)
 
     {:ok,
      socket
@@ -215,6 +219,16 @@ defmodule CodeDuelsWeb.PairingsLive do
      |> assign(:duels, duels)
      |> assign(:duels_by_round, duels_by_round)
      |> assign(:available_rounds, available_rounds)
-     |> assign(:selected_round, selected_round)}
+     |> assign(:selected_round, selected_round)
+     |> assign(:round_scores, round_scores)}
+  end
+
+  defp load_round_scores(_tournament_id, nil), do: []
+
+  defp load_round_scores(tournament_id, round_number) do
+    case CodeDuels.Tournaments.get_round(tournament_id, round_number) do
+      %{scores: scores} when is_list(scores) -> scores
+      _ -> []
+    end
   end
 end

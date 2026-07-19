@@ -43,8 +43,7 @@ defmodule CodeDuels.TypstTest do
         round_time: 2400,
         intermission_time: 300,
         problems_per_round: 5,
-        penalty: 10,
-        scores: [1, 1, 2, 2, 3]
+        penalty: 10
       }
 
       cache = Path.expand(Path.join(@cache_dir, to_string(tournament.id)))
@@ -57,18 +56,18 @@ defmodule CodeDuels.TypstTest do
     end
 
     test "succeeds with args", %{tournament: tournament} do
-      assert :ok = CodeDuels.Typst.compile_for_tournament(tournament)
+      assert :ok = CodeDuels.Typst.compile_for_tournament(tournament, [1, 1, 2, 2, 3])
     end
 
     test "produces valid HTML in cache", %{tournament: tournament, cache: cache} do
-      :ok = CodeDuels.Typst.compile_for_tournament(tournament)
+      :ok = CodeDuels.Typst.compile_for_tournament(tournament, [1, 1, 2, 2, 3])
       html = File.read!(Path.join(cache, "regulations.html"))
       assert html != ""
       assert html =~ "<html"
     end
 
     test "produces valid PDF in cache", %{tournament: tournament, cache: cache} do
-      :ok = CodeDuels.Typst.compile_for_tournament(tournament)
+      :ok = CodeDuels.Typst.compile_for_tournament(tournament, [1, 1, 2, 2, 3])
       pdf = File.read!(Path.join(cache, "regulations.pdf"))
       assert byte_size(pdf) > 0
       assert <<"%PDF"::binary, _::binary>> = pdf

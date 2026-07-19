@@ -4,7 +4,7 @@ defmodule CodeDuels.Tournaments.Participant do
 
   schema "participant" do
     field :score, :float
-    field :status, :string
+    field :role, :string
 
     belongs_to :user, CodeDuels.Accounts.User
     belongs_to :tournament, CodeDuels.Tournaments.Tournament
@@ -14,7 +14,7 @@ defmodule CodeDuels.Tournaments.Participant do
 
   def changeset(participant, attrs) do
     participant
-    |> cast(attrs, [:score, :status, :user_id, :tournament_id])
+    |> cast(attrs, [:score, :role, :user_id, :tournament_id])
     |> validate_required([:user_id, :tournament_id])
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:tournament_id)

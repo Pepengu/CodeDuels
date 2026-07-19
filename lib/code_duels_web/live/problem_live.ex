@@ -329,11 +329,10 @@ defmodule CodeDuelsWeb.ProblemLive do
           b_name = duel.player_b.user.username || duel.player_b.user.name || "Player B"
 
           ppr = tournament.problems_per_round || 3
-          start_idx = (round_num - 1) * ppr
 
           problem_points =
-            if tournament.scores,
-              do: Enum.slice(tournament.scores, start_idx, ppr),
+            if round.scores,
+              do: round.scores,
               else: List.duplicate(1, ppr)
 
           problem_ids = problems |> Enum.map(& &1.id)

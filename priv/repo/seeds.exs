@@ -20,6 +20,8 @@ alias CodeDuels.Tournaments
 alias CodeDuels.Tournaments.Tournament
 alias CodeDuels.Tournaments.Participant
 alias CodeDuels.Tournaments.Duel
+alias CodeDuels.Tournaments.Round
+alias CodeDuels.Tournaments.Submission
 
 validate_folder = fn path ->
   xml_path = Path.join(path, "problem.xml")
@@ -65,6 +67,184 @@ import_problems_from_folders = fn ->
     {:error, _} ->
       IO.puts("Problems folder does not exist yet")
   end
+end
+
+# Helper: generate 10-element duel scores for `problem_count` problems.
+# Format: [pa_p1, pb_p1, pa_p2, pb_p2, ...]
+#   negative value at even index  = player_a solved (penalty = abs)
+#   positive value at odd index   = player_b solved (penalty = value)
+#   zero                          = unsolved
+gen_duel_scores = fn problem_count ->
+  Enum.flat_map(1..problem_count, fn _ ->
+    for _ <- 1..2 do
+      roll = :rand.uniform(100)
+
+      cond do
+        roll <= 45 -> -:rand.uniform(20)
+        roll <= 90 -> :rand.uniform(20)
+        true -> 0
+      end
+    end
+  end)
+end
+
+# Helper: create submissions for a single duel's problem results.
+# `results` is a list of {problem_id, problem_letter, solved_a?, solved_b?}
+create_duel_submissions = fn round, results, user_a, user_b ->
+  languages = ["c++", "python", "rust", "go"]
+
+  make_sub = fn user, problem_id, letter, solved, lang ->
+    verdict =
+      if solved do
+        :accepted
+      else
+        Enum.random([:wrong_answer, :time_limit, :runtime_error, :memory_limit])
+      end
+
+    %Submission{}
+    |> Submission.changeset(%{
+      user_id: user.id,
+      round_id: round.id,
+      problem_id: problem_id,
+      language: lang,
+      code:
+        "#include <bits/stdc++.h>\nusing namespace std;\nint main() { /* #{letter} */ return 0; }",
+      status: :done,
+      problem_letter: letter,
+      verdict: verdict,
+      message: if(solved, do: "OK", else: "Wrong answer on test 3"),
+      tests_passed: if(solved, do: 10, else: :rand.uniform(9))
+    })
+    |> Repo.insert!()
+  end
+
+  for {problem_id, letter, solved_a, solved_b} <- results do
+    # player_a submissions
+    if solved_a do
+      # a couple of wrong attempts then accepted
+      for _ <- 1..:rand.uniform(2) do
+        make_sub.(user_a, problem_id, letter, false, Enum.random(languages))
+      end
+
+      make_sub.(user_a, problem_id, letter, true, Enum.random(languages))
+    else
+      for _ <- 1..:rand.uniform(2) do
+        make_sub.(user_a, problem_id, letter, false, Enum.random(languages))
+      end
+    end
+
+    # player_b submissions
+    if solved_b do
+      for _ <- 1..:rand.uniform(2) do
+        make_sub.(user_b, problem_id, letter, false, Enum.random(languages))
+      end
+
+      make_sub.(user_b, problem_id, letter, true, Enum.random(languages))
+    else
+      for _ <- 1..:rand.uniform(2) do
+        make_sub.(user_b, problem_id, letter, false, Enum.random(languages))
+      end
+    end
+  end
+end
+
+# Helper: seed one tournament fully.
+seed_tournament = fn tournament, rounds_amount, problems_per_round, participants, rounds ->
+  # rounds already created with problemset above; ensure they exist
+  problem_letters = Enum.map(?A..?Z, &<<&1>>)
+
+  # Create duels round-robin within participants
+  n = length(participants)
+  half = div(n, 2)
+
+  all_duels =
+    Enum.reduce(1..rounds_amount, [], fn round_num, acc ->
+      pairs =
+        Enum.reduce(1..half, [], fn i, acc_pairs ->
+          top_idx = i - 1
+          bottom_idx = n - (rem(i - 2 + round_num, half) + 1)
+          p_a = Enum.at(participants, top_idx)
+          p_b = Enum.at(participants, bottom_idx)
+          [{p_a, p_b} | acc_pairs]
+        end)
+        |> Enum.reverse()
+
+      round_duels =
+        Enum.map(pairs, fn {p_a, p_b} ->
+          %Duel{}
+          |> Duel.changeset(%{
+            tournament_id: tournament.id,
+            round_number: round_num,
+            player_a_id: p_a.id,
+            player_b_id: p_b.id,
+            status: "completed",
+            scores: gen_duel_scores.(problems_per_round)
+          })
+          |> Repo.insert!()
+        end)
+
+      acc ++ round_duels
+    end)
+
+  # For each duel, build submissions + compute participant score contributions
+  scores_contrib =
+    Enum.reduce(all_duels, %{}, fn duel, acc ->
+      round = Enum.find(rounds, &(&1.round_number == duel.round_number))
+      problemset = round.problemset
+      scores = duel.scores
+
+      # decode results per problem
+      results =
+        Enum.map(0..(problems_per_round - 1), fn i ->
+          a_idx = i * 2
+          b_idx = i * 2 + 1
+          a_val = Enum.at(scores, a_idx) || 0
+          b_val = Enum.at(scores, b_idx) || 0
+
+          solved_a = a_val < 0
+          solved_b = b_val > 0
+
+          problem_id = Enum.at(problemset, i)
+          letter = Enum.at(problem_letters, i)
+
+          {problem_id, letter, solved_a, solved_b}
+        end)
+
+      create_duel_submissions.(
+        round,
+        results,
+        Repo.get!(Participant, duel.player_a_id) |> Repo.preload(:user) |> Map.get(:user),
+        Repo.get!(Participant, duel.player_b_id) |> Repo.preload(:user) |> Map.get(:user)
+      )
+
+      # compute match score per player using same logic as Standings
+      round_record = Repo.get!(Round, round.id)
+      round_scores = round_record.scores || [1, 1, 2, 2, 3]
+
+      {a_score, _, _} =
+        Tournaments.Standings.calculate_player_score(scores, true, round_scores)
+
+      {b_score, _, _} =
+        Tournaments.Standings.calculate_player_score(scores, false, round_scores)
+
+      acc
+      |> Map.update(duel.player_a_id, a_score, &(&1 + a_score))
+      |> Map.update(duel.player_b_id, b_score, &(&1 + b_score))
+    end)
+
+  # apply participant scores
+  Enum.each(scores_contrib, fn {pid, score} ->
+    participant = Repo.get!(Participant, pid)
+    participant |> Ecto.Changeset.change(%{score: score / 1.0}) |> Repo.update!()
+  end)
+
+  tournament
+  |> Ecto.Changeset.change(%{current_round: rounds_amount, status: "completed"})
+  |> Repo.update!()
+
+  IO.puts(
+    "Seeded tournament '#{tournament.name}' with #{length(all_duels)} duels, #{length(participants)} participants"
+  )
 end
 
 # Create admin user
@@ -113,11 +293,16 @@ test_users =
 admin_user = Repo.get_by(User, username: "admin")
 all_users = [admin_user | test_users]
 
-# Create test tournament
-tournament =
+# Import problems BEFORE creating rounds so problemset references real IDs
+import_problems_from_folders.()
+problem_ids = Repo.all(from p in Problem, order_by: p.id, select: p.id)
+IO.puts("Available problems: #{inspect(problem_ids)}")
+
+# ===== Tournament 1: Тестовый турнир (5 rounds, 5 problems) =====
+tournament1 =
   case Repo.get_by(Tournament, name: "Тестовый турнир") do
     nil ->
-      {:ok, tournament} =
+      {:ok, t} =
         Tournaments.create_tournament(%{
           name: "Тестовый турнир",
           rounds_amount: 5,
@@ -125,160 +310,187 @@ tournament =
           round_time: 2400,
           intermission_time: 300,
           penalty: 5,
-          scores: [1, 1, 2, 2, 3],
           max_participants: 32,
           is_open: true,
-          start_time: DateTime.utc_now() |> DateTime.truncate(:second)
+          start_time:
+            DateTime.utc_now() |> DateTime.add(5 * 60, :second) |> DateTime.truncate(:second)
         })
 
-      IO.puts("Created test tournament")
-      tournament
+      IO.puts("Created test tournament 1")
+      t
 
     t ->
-      IO.puts("Test tournament already exists")
+      IO.puts("Test tournament 1 already exists")
       t
   end
 
-# Ensure rounds exist for tournament
-existing_rounds =
-  Repo.all(from r in CodeDuels.Tournaments.Round, where: r.tournament_id == ^tournament.id)
+# Ensure rounds exist for tournament1
+existing_rounds1 =
+  Repo.all(from r in Round, where: r.tournament_id == ^tournament1.id)
 
-if length(existing_rounds) == 0 do
-  IO.puts("Creating missing rounds...")
+_rounds1 =
+  if length(existing_rounds1) == 0 do
+    t1_scores = [1, 1, 2, 2, 3]
 
-  for round_num <- 1..tournament.rounds_amount do
-    %CodeDuels.Tournaments.Round{}
-    |> CodeDuels.Tournaments.Round.changeset(%{
-      tournament_id: tournament.id,
-      round_number: round_num,
-      problemset: [1, 2, 3, 4, 5],
-      start_time: ~T[00:00:00]
-    })
-    |> Repo.insert!()
+    rounds =
+      for round_num <- 1..tournament1.rounds_amount do
+        %Round{}
+        |> Round.changeset(%{
+          tournament_id: tournament1.id,
+          round_number: round_num,
+          problemset: Enum.take(problem_ids, tournament1.problems_per_round),
+          start_time: ~T[00:00:00],
+          scores: t1_scores
+        })
+        |> Repo.insert!()
+      end
+
+    IO.puts("Created #{tournament1.rounds_amount} rounds for tournament1")
+    rounds
+  else
+    rounds =
+      Enum.map(existing_rounds1, fn round ->
+        round
+        |> Ecto.Changeset.change(%{
+          problemset: Enum.take(problem_ids, tournament1.problems_per_round)
+        })
+        |> Repo.update!()
+      end)
+
+    IO.puts("Updated rounds for tournament1")
+    rounds
   end
 
-  IO.puts("Created #{tournament.rounds_amount} rounds")
-else
-  # Update all existing rounds to have problemset: [1,1,1,1,1]
-  tournament
-  |> Repo.preload(:rounds)
-  |> Map.get(:rounds)
-  |> Enum.each(fn round ->
-    round
-    |> Ecto.Changeset.change(%{problemset: [1, 2, 3, 4, 5]})
-    |> Repo.update!()
-  end)
-
-  IO.puts("Updated rounds with problemset: [1,2,3,4,5]")
-end
-
-# Add all users as participants
+# Participants for tournament1: admin=organizer, rest=participant
 for user <- all_users do
-  case Repo.get_by(Participant, tournament_id: tournament.id, user_id: user.id) do
+  case Repo.get_by(Participant, tournament_id: tournament1.id, user_id: user.id) do
     nil ->
+      role = if(user.is_admin, do: "organizer", else: "participant")
+
       {:ok, _} =
         %Participant{}
         |> Ecto.Changeset.change(%{
-          tournament_id: tournament.id,
+          tournament_id: tournament1.id,
           user_id: user.id,
           score: 0.0,
-          status: "active"
+          role: role
         })
         |> Repo.insert()
 
-      IO.puts("Added #{user.username} to tournament")
+      IO.puts("Added #{user.username} to tournament1 as #{role}")
 
     _ ->
       :skip
   end
 end
 
-# Generate duels for all rounds
-current = tournament.current_round
-total = tournament.rounds_amount
+participants1 = Repo.all(from p in Participant, where: p.tournament_id == ^tournament1.id)
 
-existing_duels = Repo.aggregate(from(d in Duel, where: d.tournament_id == ^tournament.id), :count)
-IO.puts("Current round: #{current}, target: #{total}, existing duels: #{existing_duels}")
+# Tournament1 is "upcoming" — no duels seeded, status stays "setup"
 
-if current < total or existing_duels == 0 do
-  IO.puts("Generating duels...")
+# ===== Tournament 2: Зимний кубок (3 rounds, 3 problems) — closed, visible only to admins & participants =====
+tournament2 =
+  case Repo.get_by(Tournament, name: "Зимний кубок") do
+    nil ->
+      {:ok, t} =
+        Tournaments.create_tournament(%{
+          name: "Зимний кубок",
+          rounds_amount: 3,
+          problems_per_round: 3,
+          round_time: 1800,
+          intermission_time: 240,
+          penalty: 5,
+          max_participants: 16,
+          is_open: false,
+          start_time: DateTime.utc_now() |> DateTime.add(-14 * 24 * 3600, :second)
+        })
 
-  active_participants =
-    Repo.all(
-      from p in Participant, where: p.tournament_id == ^tournament.id and p.status == "active"
-    )
-    |> Enum.sort_by(& &1.id)
+      IO.puts("Created test tournament 2")
+      t
 
-  n = length(active_participants)
-  half = div(n, 2)
+    t ->
+      IO.puts("Test tournament 2 already exists")
+      t
+  end
 
-  created =
-    Enum.reduce(1..tournament.rounds_amount, 0, fn round_num, acc ->
-      pairs =
-        Enum.reduce(1..half, [], fn i, acc_pairs ->
-          top_idx = i - 1
-          bottom_idx = n - (rem(i - 2 + round_num, half) + 1)
-          p_a = Enum.at(active_participants, top_idx)
-          p_b = Enum.at(active_participants, bottom_idx)
-          [{p_a, p_b} | acc_pairs]
-        end)
-        |> Enum.reverse()
+# Ensure rounds exist for tournament2
+existing_rounds2 =
+  Repo.all(from r in Round, where: r.tournament_id == ^tournament2.id)
 
-      Enum.each(pairs, fn {p_a, p_b} ->
-        %Duel{}
-        |> Duel.changeset(%{
-          tournament_id: tournament.id,
+rounds2 =
+  if length(existing_rounds2) == 0 do
+    t2_scores = [1, 2, 3]
+
+    rounds =
+      for round_num <- 1..tournament2.rounds_amount do
+        %Round{}
+        |> Round.changeset(%{
+          tournament_id: tournament2.id,
           round_number: round_num,
-          player_a_id: p_a.id,
-          player_b_id: p_b.id,
-          status: "pending",
-          scores: []
+          problemset: Enum.take(problem_ids, tournament2.problems_per_round),
+          start_time: ~T[00:00:00],
+          scores: t2_scores
         })
         |> Repo.insert!()
+      end
+
+    IO.puts("Created #{tournament2.rounds_amount} rounds for tournament2")
+    rounds
+  else
+    rounds =
+      Enum.map(existing_rounds2, fn round ->
+        round
+        |> Ecto.Changeset.change(%{
+          problemset: Enum.take(problem_ids, tournament2.problems_per_round)
+        })
+        |> Repo.update!()
       end)
 
-      IO.puts("Round #{round_num}: #{length(pairs)} duels")
-      acc + length(pairs)
-    end)
+    IO.puts("Updated rounds for tournament2")
+    rounds
+  end
 
-  IO.puts("Total duels: #{created}")
+# Participants for tournament2: subset of users (admin + 11 test users)
+t2_users = Enum.take(all_users, 12)
 
-  tournament
-  |> Ecto.Changeset.change(%{current_round: tournament.rounds_amount, status: "completed"})
-  |> Repo.update!()
+for user <- t2_users do
+  case Repo.get_by(Participant, tournament_id: tournament2.id, user_id: user.id) do
+    nil ->
+      role = if(user.is_admin, do: "organizer", else: "participant")
 
-  IO.puts("Seeding complete!")
+      {:ok, _} =
+        %Participant{}
+        |> Ecto.Changeset.change(%{
+          tournament_id: tournament2.id,
+          user_id: user.id,
+          score: 0.0,
+          role: role
+        })
+        |> Repo.insert()
+
+      IO.puts("Added #{user.username} to tournament2 as #{role}")
+
+    _ ->
+      :skip
+  end
+end
+
+participants2 = Repo.all(from p in Participant, where: p.tournament_id == ^tournament2.id)
+
+# Seed tournament2 only if it has no duels yet
+existing_duels2 =
+  Repo.aggregate(from(d in Duel, where: d.tournament_id == ^tournament2.id), :count)
+
+if existing_duels2 == 0 do
+  seed_tournament.(
+    tournament2,
+    tournament2.rounds_amount,
+    tournament2.problems_per_round,
+    participants2,
+    rounds2
+  )
 else
-  IO.puts("Tournament already seeded (round #{current})")
+  IO.puts("Tournament2 already has duels, skipping reseed")
 end
-
-# Set sample scores for all duels
-duels = Repo.all(from d in Duel, where: d.tournament_id == ^tournament.id)
-
-problem_count = tournament.problems_per_round
-
-for duel <- duels do
-  scores =
-    for _ <- 1..problem_count do
-      roll = :rand.uniform(100)
-
-      cond do
-        roll <= 20 -> -:rand.uniform(20)
-        roll <= 40 -> :rand.uniform(20)
-        true -> 0
-      end
-    end
-
-  duel
-  |> Ecto.Changeset.change(%{status: "completed", scores: scores})
-  |> Repo.update!()
-end
-
-IO.puts("Set sample scores for #{length(duels)} duels")
-
-IO.puts("---")
-IO.puts("Importing problems from folders...")
-
-import_problems_from_folders.()
 
 IO.puts("Seeding complete!")

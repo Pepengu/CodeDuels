@@ -6,7 +6,7 @@ defmodule CodeDuels.Repo.Migrations.CreateParticipant do
       add :user_id, references(:users), null: false
       add :tournament_id, references(:tournament), null: false
       add :score, :float, default: 0.0
-      add :status, :string, default: "active"
+      add :role, :string, default: "participant"
 
       timestamps(type: :utc_datetime)
     end

@@ -184,11 +184,10 @@ defmodule CodeDuelsWeb.RoundDetailLive do
     round_num = String.to_integer(round_number)
 
     ppr = tournament.problems_per_round || 3
-    start_idx = (round_num - 1) * ppr
 
     round_scores =
-      if tournament.scores,
-        do: Enum.slice(tournament.scores, start_idx, ppr),
+      if round.scores,
+        do: round.scores,
         else: List.duplicate(nil, ppr)
 
     total_score = Enum.reject(round_scores, &is_nil/1) |> Enum.sum()

@@ -1,6 +1,8 @@
 defmodule CodeDuelsWeb.TournamentDetailLive do
   use CodeDuelsWeb, :live_view
 
+  import Ecto.Query
+  alias CodeDuels.Accounts.User
   import CodeDuelsWeb.Helpers.TimeHelpers
 
   def render(assigns) do
@@ -71,13 +73,10 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
     current_user = assigns.current_user
     ppr = tournament.problems_per_round || 0
 
-    start_idx = (round - 1) * ppr
-    end_idx = start_idx + ppr - 1
+    round_record = CodeDuels.Tournaments.get_round(tournament.id, round)
 
     round_scores =
-      if tournament.scores,
-        do: Enum.slice(tournament.scores, start_idx..end_idx) |> Enum.sum(),
-        else: nil
+      if round_record && round_record.scores, do: Enum.sum(round_record.scores), else: nil
 
     is_admin = current_user && current_user.is_admin
     now = assigns.now || DateTime.utc_now()
@@ -154,12 +153,33 @@ defmodule CodeDuelsWeb.TournamentDetailLive do
     Calendar.strftime(msk_time, "%Y-%m-%d %H:%M MSK")
   end
 
+  defp tournament_visible?(%{is_open: true}, _user), do: true
+  defp tournament_visible?(_tournament, %{is_admin: true}), do: true
+
+  defp tournament_visible?(tournament, %User{id: user_id}) do
+    CodeDuels.Repo.one!(
+      from p in CodeDuels.Tournaments.Participant,
+        where: p.tournament_id == ^tournament.id and p.user_id == ^user_id,
+        select: count(p.id)
+    ) > 0
+  end
+
+  defp tournament_visible?(_tournament, _user), do: false
+
   def mount(%{"id" => id}, _session, socket) do
     tournament = CodeDuels.Tournaments.get_tournament!(id)
-    schedule_timer()
-    socket = assign(socket, :tournament, tournament)
-    socket = assign(socket, :now, DateTime.utc_now())
-    {:ok, socket}
+
+    if tournament_visible?(tournament, socket.assigns.current_user) do
+      schedule_timer()
+      socket = assign(socket, :tournament, tournament)
+      socket = assign(socket, :now, DateTime.utc_now())
+      {:ok, socket}
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, "Турнир недоступен")
+       |> push_navigate(to: "/tournament")}
+    end
   end
 
   def handle_info(:tick, socket) do

@@ -117,11 +117,10 @@ defmodule CodeDuelsWeb.SubmissionsLive do
       problem_ids = Enum.map(problems, & &1.id)
 
       ppr = tournament.problems_per_round || 3
-      start_idx = (round_num - 1) * ppr
 
       problem_points =
-        if tournament.scores do
-          Enum.slice(tournament.scores, start_idx, ppr)
+        if round.scores do
+          round.scores
         else
           List.duplicate(1, ppr)
         end
@@ -138,7 +137,7 @@ defmodule CodeDuelsWeb.SubmissionsLive do
         CodeDuels.Tournaments.get_submissions_for_participants(user_ids, round.id, problem_ids)
 
       duel_scores = duel.scores || [0, 0, 0, 0, 0]
-      tournament_problem_scores = tournament.scores || [1, 1, 2, 2, 3]
+      tournament_problem_scores = round.scores || [1, 1, 2, 2, 3]
 
       player_a_submissions_by_id = Map.get(submissions_data, duel.player_a.user_id, %{})
       player_b_submissions_by_id = Map.get(submissions_data, duel.player_b.user_id, %{})

@@ -13,7 +13,10 @@ defmodule CodeDuels.Tournaments.Standings do
 
     participants =
       Tournaments.list_participants(tournament_id)
-      |> Enum.filter(fn p -> p.status == "active" end)
+      |> Enum.filter(fn p ->
+        p.role == "participant" or p.role == "organizer" or p.role == "volunteer" or
+          p.role == "disqualified"
+      end)
       |> Enum.sort_by(fn p -> {-p.score, p.id} end)
       |> Repo.preload(:user)
 
@@ -25,7 +28,14 @@ defmodule CodeDuels.Tournaments.Standings do
       )
 
     total_rounds = tournament.rounds_amount || 0
-    tournament_problem_scores = tournament.scores || [1, 1, 2, 2, 3]
+
+    rounds_scores =
+      Repo.all(
+        from r in CodeDuels.Tournaments.Round,
+          where: r.tournament_id == ^tournament_id,
+          select: {r.round_number, r.scores}
+      )
+      |> Map.new()
 
     participant_stats =
       for p <- participants do
@@ -44,12 +54,13 @@ defmodule CodeDuels.Tournaments.Standings do
               m ->
                 duel_scores = m.scores || [0, 0, 0, 0, 0]
                 is_player_a = m.player_a_id == p.id
+                round_problem_scores = Map.get(rounds_scores, round_num) || [1, 1, 2, 2, 3]
 
                 {player_match_score, player_penalty, player_tournament_points} =
-                  calculate_player_score(duel_scores, is_player_a, tournament_problem_scores)
+                  calculate_player_score(duel_scores, is_player_a, round_problem_scores)
 
                 {opponent_match_score, _opponent_penalty, opponent_tournament_points} =
-                  calculate_player_score(duel_scores, !is_player_a, tournament_problem_scores)
+                  calculate_player_score(duel_scores, !is_player_a, round_problem_scores)
 
                 match_result =
                   cond do
@@ -93,7 +104,7 @@ defmodule CodeDuels.Tournaments.Standings do
     |> Enum.map(fn {stats, idx} -> %{stats | rank: idx} end)
   end
 
-  defp calculate_player_score(duel_scores, is_player_a, tournament_problem_scores) do
+  def calculate_player_score(duel_scores, is_player_a, tournament_problem_scores) do
     indices =
       if is_player_a do
         for(i <- 0..(length(duel_scores) - 1), rem(i, 2) == 0, do: i)
@@ -103,7 +114,7 @@ defmodule CodeDuels.Tournaments.Standings do
 
     Enum.reduce(indices, {0, 0, 0}, fn idx, {match_score, penalty, tournament_points} ->
       value = Enum.at(duel_scores, idx) || 0
-      problem_points = Enum.at(tournament_problem_scores, idx) || 0
+      problem_points = Enum.at(tournament_problem_scores, div(idx, 2)) || 0
 
       if is_player_a do
         if value < 0 do

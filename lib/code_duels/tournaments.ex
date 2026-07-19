@@ -4,12 +4,32 @@ defmodule CodeDuels.Tournaments do
   """
 
   import Ecto.Query, warn: false
+  alias CodeDuels.Accounts.User
   alias CodeDuels.Problems.Problem
   alias CodeDuels.Repo
-  alias CodeDuels.Tournaments.{Tournament, Participant, Duel, Round, Submission}
+  alias CodeDuels.Tournaments.{Tournament, Participant, Duel, Round, Submission, Standings}
 
   def list_open_tournaments do
     Repo.all(from t in Tournament, where: t.is_open == true)
+  end
+
+  def list_tournaments_for_user(nil), do: list_open_tournaments()
+
+  def list_tournaments_for_user(%User{is_admin: true}), do: Repo.all(Tournament)
+
+  def list_tournaments_for_user(%User{id: user_id}) do
+    open_ids = Repo.all(from t in Tournament, where: t.is_open == true, select: t.id)
+
+    participant_ids =
+      Repo.all(
+        from p in Participant,
+          join: t in assoc(p, :tournament),
+          where: p.user_id == ^user_id and t.is_open == false,
+          select: t.id
+      )
+
+    visible_ids = Enum.uniq(open_ids ++ participant_ids)
+    Repo.all(from t in Tournament, where: t.id in ^visible_ids)
   end
 
   def get_tournament!(id), do: Repo.get!(Tournament, id)
@@ -198,6 +218,139 @@ defmodule CodeDuels.Tournaments do
     )
   end
 
+  def get_user_history(user_id) do
+    Repo.all(
+      from p in Participant,
+        join: t in assoc(p, :tournament),
+        where: p.user_id == ^user_id,
+        order_by: [desc: p.inserted_at],
+        preload: [:tournament]
+    )
+  end
+
+  @doc """
+  Aggregate submission statistics for a user based on successful (accepted) submissions.
+
+  Returns a map with:
+    * `:total_submissions` - count of all submissions by the user
+    * `:accepted_submissions` - count of accepted submissions (status done + verdict accepted)
+    * `:problems_solved` - count of distinct problems solved
+    * `:languages` - list of `{language, accepted_count}` ordered by accepted count desc
+  """
+  def get_user_profile_stats(user_id) do
+    total_submissions =
+      Repo.one(from s in Submission, where: s.user_id == ^user_id, select: count(s.id)) || 0
+
+    accepted =
+      Repo.one(
+        from s in Submission,
+          where: s.user_id == ^user_id and s.status == :done and s.verdict == :accepted,
+          select: %{
+            count: count(s.id),
+            problems: count(s.problem_id, :distinct)
+          }
+      )
+
+    languages =
+      Repo.all(
+        from s in Submission,
+          where: s.user_id == ^user_id and s.status == :done and s.verdict == :accepted,
+          group_by: s.language,
+          select: {s.language, count(s.id)},
+          order_by: [desc: count(s.id)]
+      )
+
+    %{
+      total_submissions: total_submissions,
+      accepted_submissions: (accepted && accepted.count) || 0,
+      problems_solved: (accepted && accepted.problems) || 0,
+      languages: languages
+    }
+  end
+
+  @doc """
+  Computes a user's win/draw/loss record across all tournaments from completed duels.
+
+  Returns a tuple `{aggregate, per_tournament}` where:
+    * `aggregate` is `%{wins:, draws:, losses:, duels_played:}`
+    * `per_tournament` is a map keyed by `tournament_id` with the same shape
+  """
+  def get_user_duel_stats(user_id) do
+    participations = get_user_history(user_id)
+    participant_ids = Enum.map(participations, & &1.id)
+
+    if Enum.empty?(participant_ids) do
+      {%{wins: 0, draws: 0, losses: 0, duels_played: 0}, %{}}
+    else
+      tournament_ids = Enum.map(participations, & &1.tournament_id)
+
+      rounds_map =
+        Repo.all(
+          from r in Round,
+            where: r.tournament_id in ^tournament_ids,
+            select: {{r.tournament_id, r.round_number}, r.scores}
+        )
+        |> Map.new()
+
+      duels =
+        Repo.all(
+          from d in Duel,
+            where:
+              d.status == "completed" and
+                (d.player_a_id in ^participant_ids or d.player_b_id in ^participant_ids),
+            preload: [:player_a, :player_b]
+        )
+
+      participant_id_set = MapSet.new(participant_ids)
+
+      Enum.reduce(
+        duels,
+        {%{wins: 0, draws: 0, losses: 0, duels_played: 0}, %{}},
+        fn duel, {agg_acc, per_acc} ->
+          scores = duel.scores || []
+
+          problem_scores =
+            Map.get(rounds_map, {duel.tournament_id, duel.round_number}) || [1, 1, 2, 2, 3]
+
+          is_player_a = MapSet.member?(participant_id_set, duel.player_a_id)
+
+          {player_score, _, _} =
+            Standings.calculate_player_score(scores, is_player_a, problem_scores)
+
+          {opponent_score, _, _} =
+            Standings.calculate_player_score(scores, not is_player_a, problem_scores)
+
+          result =
+            cond do
+              player_score > opponent_score -> :win
+              player_score == opponent_score -> :draw
+              true -> :loss
+            end
+
+          agg_acc = %{
+            agg_acc
+            | wins: agg_acc.wins + if(result == :win, do: 1, else: 0),
+              draws: agg_acc.draws + if(result == :draw, do: 1, else: 0),
+              losses: agg_acc.losses + if(result == :loss, do: 1, else: 0),
+              duels_played: agg_acc.duels_played + 1
+          }
+
+          current = Map.get(per_acc, duel.tournament_id, %{wins: 0, draws: 0, losses: 0})
+
+          per_acc =
+            Map.put(per_acc, duel.tournament_id, %{
+              current
+              | wins: current.wins + if(result == :win, do: 1, else: 0),
+                draws: current.draws + if(result == :draw, do: 1, else: 0),
+                losses: current.losses + if(result == :loss, do: 1, else: 0)
+            })
+
+          {agg_acc, per_acc}
+        end
+      )
+    end
+  end
+
   def get_duels_for_tournament(tournament_id) do
     Repo.all(
       from d in Duel,
@@ -262,7 +415,9 @@ defmodule CodeDuels.Tournaments do
 
       participants =
         list_participants(tournament_id)
-        |> Enum.filter(&(&1.status == "active"))
+        |> Enum.filter(
+          &(&1.role == "participant" or &1.role == "organizer" or &1.role == "volunteer")
+        )
 
       previous_duels =
         Repo.all(
