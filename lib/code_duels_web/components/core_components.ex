@@ -514,7 +514,13 @@ defmodule CodeDuelsWeb.CoreComponents do
 
     ~H"""
     <h1 class="text-4xl font-bold mb-2">{@tournament.name}</h1>
-    <p class="text-lg opacity-70 mb-8">{@subtitle} — Раунд {@round_number}</p>
+    <p class="text-lg opacity-70 mb-2">{@subtitle} — Раунд {@round_number}</p>
+    <.link
+      navigate={"/tournament/#{@tournament.id}"}
+      class="text-sm opacity-70 hover:opacity-100 mb-6 inline-block"
+    >
+      &larr; К турниру
+    </.link>
 
     <div class="tabs tabs-boxed mb-6">
       <.link

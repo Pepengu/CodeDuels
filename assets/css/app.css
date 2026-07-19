@@ -110,3 +110,4 @@
 .text-draw { color: var(--color-draw); }
 .border-form {border-color: var(--color-form-border)}
 .border-error {border-color: var(--color-error)}
+.border-success {border-color: var(--color-success)}

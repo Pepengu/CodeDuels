@@ -140,41 +140,39 @@ defmodule CodeDuels.Tournaments do
             Enum.filter(user_submissions, fn s -> s.problem_id == problem_id end)
             |> Enum.sort_by(& &1.inserted_at, {:desc, DateTime})
 
-          {wrong_count, final_status, final_time} =
+          {wrong_count, final_status, final_time, solve_id} =
             cond do
               Enum.any?(user_prob_subs, fn s ->
-                s.status == "accepted" or s.status == "solved"
+                s.verdict == :accepted
               end) ->
                 correct =
                   Enum.find(user_prob_subs, fn s ->
-                    s.status == "accepted" or s.status == "solved"
+                    s.verdict == :accepted
                   end)
 
                 wrong_before =
-                  Enum.count(
-                    Enum.take_while(user_prob_subs, fn s ->
-                      s.id != correct.id and s.inserted_at <= correct.inserted_at
-                    end),
-                    fn s -> s.status != "accepted" and s.status != "solved" end
-                  )
+                  user_prob_subs
+                  |> Enum.filter(fn s -> s.id < correct.id end)
+                  |> Enum.count(fn s -> s.verdict != :accepted end)
 
-                {wrong_before, "solved", correct.inserted_at}
+                {wrong_before, "solved", correct.inserted_at, correct.id}
 
               user_prob_subs == [] ->
-                {nil, "none", nil}
+                {nil, "none", nil, nil}
 
-              Enum.any?(user_prob_subs, fn s -> s.status == "pending" end) ->
+              Enum.any?(user_prob_subs, fn s -> s.status == :pending end) ->
                 last = List.first(user_prob_subs)
                 wrong_count = Enum.count(Enum.drop(user_prob_subs, 1))
-                {wrong_count, "pending", last.inserted_at}
+                {wrong_count, "pending", last.inserted_at, nil}
 
               true ->
                 last = List.first(user_prob_subs)
                 wrong_count = Enum.count(user_prob_subs)
-                {wrong_count, "unsolved", last.inserted_at}
+                {wrong_count, "unsolved", last.inserted_at, nil}
             end
 
-          {problem_id, %{wrong_count: wrong_count, status: final_status, time: final_time}}
+          {problem_id,
+           %{wrong_count: wrong_count, status: final_status, time: final_time, solve_id: solve_id}}
         end
 
       {user_id, Map.new(problem_data)}
@@ -200,7 +198,7 @@ defmodule CodeDuels.Tournaments do
     Repo.all(
       from s in Submission,
         where: s.user_id == ^user_id and s.round_id == ^round_id,
-        order_by: [desc: s.inserted_at],
+        order_by: [desc: s.inserted_at, desc: s.id],
         preload: [:problem]
     )
   end
@@ -213,7 +211,7 @@ defmodule CodeDuels.Tournaments do
           s.user_id == ^user_id and
             s.round_id == ^round_id and
             s.problem_letter == ^problem_letter,
-        order_by: [desc: s.inserted_at],
+        order_by: [desc: s.inserted_at, desc: s.id],
         preload: [:problem]
     )
   end

@@ -30,7 +30,7 @@ defmodule CodeDuelsWeb.SubmissionsLive do
                     </tr>
                   </thead>
                   <tbody>
-                    <%= for {player_name, player_data} <- @player_submissions do %>
+                    <%= for {{player_name, player_data}, player_idx} <- Enum.with_index(@player_submissions) do %>
                       <% is_current_user = @current_user && player_data.user_id == @current_user.id %>
                       <tr class="hover">
                         <td class={
@@ -44,11 +44,16 @@ defmodule CodeDuelsWeb.SubmissionsLive do
                         <td class={current_user_class("text-center", is_current_user)}>
                           {player_data.penalty}
                         </td>
-                        <%= for sub_data <- player_data.submissions_by_idx do %>
+                        <%= for {sub_data, problem_idx} <- Enum.with_index(player_data.submissions_by_idx) do %>
                           <% {prefix, time_str} = render_submission_text(sub_data) %>
+                          <% solved = sub_data && sub_data.status == "solved" %>
+                          <% player_atom = if player_idx == 0, do: :a, else: :b %>
+                          <% is_first = solved && Enum.at(@first_solved, problem_idx) == player_atom %>
+                          <% slower =
+                            !is_first && Enum.at(@first_solved, problem_idx) != nil %>
                           <td class={
                             current_user_class("text-center", is_current_user) ++
-                              submission_class(sub_data)
+                              if(slower, do: ["text-gray-400"], else: submission_class(sub_data))
                           }>
                             <div>{prefix}</div>
                             <div class="text-xs opacity-70">{time_str}</div>
@@ -137,7 +142,7 @@ defmodule CodeDuelsWeb.SubmissionsLive do
         CodeDuels.Tournaments.get_submissions_for_participants(user_ids, round.id, problem_ids)
 
       duel_scores = duel.scores || [0, 0, 0, 0, 0]
-      tournament_problem_scores = round.scores || [1, 1, 2, 2, 3]
+      _tournament_problem_scores = round.scores || [1, 1, 2, 2, 3]
 
       player_a_submissions_by_id = Map.get(submissions_data, duel.player_a.user_id, %{})
       player_b_submissions_by_id = Map.get(submissions_data, duel.player_b.user_id, %{})
@@ -152,12 +157,34 @@ defmodule CodeDuelsWeb.SubmissionsLive do
           Map.get(player_b_submissions_by_id, pid)
         end)
 
+      first_solved =
+        Enum.map(problem_ids, fn pid ->
+          a_sub = Map.get(player_a_submissions_by_id, pid)
+          b_sub = Map.get(player_b_submissions_by_id, pid)
+          a_ok = a_sub && a_sub.status == "solved"
+          b_ok = b_sub && b_sub.status == "solved"
+
+          cond do
+            a_ok and b_ok ->
+              if a_sub.solve_id < b_sub.solve_id, do: :a, else: :b
+
+            a_ok ->
+              :a
+
+            b_ok ->
+              :b
+
+            true ->
+              nil
+          end
+        end)
+
       {player_a_score, player_a_penalty} =
         calculate_player_score_and_penalty(
           duel_scores,
           true,
           player_a_submissions_by_id,
-          tournament_problem_scores
+          problem_ids
         )
 
       {player_b_score, player_b_penalty} =
@@ -165,7 +192,7 @@ defmodule CodeDuelsWeb.SubmissionsLive do
           duel_scores,
           false,
           player_b_submissions_by_id,
-          tournament_problem_scores
+          problem_ids
         )
 
       player_submissions = [
@@ -220,6 +247,7 @@ defmodule CodeDuelsWeb.SubmissionsLive do
          tournament: tournament,
          problems: problems_with_points,
          player_submissions: player_submissions,
+         first_solved: first_solved,
          current_user_all_submissions: current_user_all_submissions,
          opponent_all_submissions: opponent_all_submissions
        })}
@@ -230,7 +258,7 @@ defmodule CodeDuelsWeb.SubmissionsLive do
          duel_scores,
          is_player_a,
          submissions,
-         _tournament_problem_scores
+         problem_ids
        )
        when is_list(duel_scores) do
     indices =
@@ -242,21 +270,22 @@ defmodule CodeDuelsWeb.SubmissionsLive do
 
     Enum.reduce(indices, {0, 0}, fn idx, {score_acc, penalty_acc} ->
       value = Enum.at(duel_scores, idx) || 0
-      sub_data = Map.get(submissions, idx + 1)
+      problem_id = Enum.at(problem_ids, div(idx, 2))
+      sub_data = Map.get(submissions, problem_id)
 
-      cond do
-        value > 0 ->
-          wrong_count = if sub_data && sub_data.wrong_count, do: sub_data.wrong_count, else: 0
-          {score_acc + 1, penalty_acc + wrong_count}
+      solved =
+        if is_player_a do
+          value < 0
+        else
+          value > 0
+        end
 
-        value < 0 ->
-          wrong_count =
-            if sub_data && sub_data.wrong_count, do: sub_data.wrong_count, else: abs(value)
-
-          {score_acc, penalty_acc + wrong_count}
-
-        true ->
-          {score_acc, penalty_acc}
+      if solved do
+        wrong_count = if sub_data && sub_data.wrong_count, do: sub_data.wrong_count, else: 0
+        {score_acc + 1, penalty_acc + wrong_count}
+      else
+        wrong_count = if sub_data && sub_data.wrong_count, do: sub_data.wrong_count, else: 0
+        {score_acc, penalty_acc + wrong_count}
       end
     end)
   end
@@ -311,7 +340,6 @@ defmodule CodeDuelsWeb.SubmissionsLive do
     NaiveDateTime.to_time(time)
     |> Time.to_string()
     |> String.slice(0, 5)
-    |> then(&"@#{&1}")
   end
 
   defp format_time(_), do: ""
