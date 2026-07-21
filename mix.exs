@@ -71,7 +71,8 @@ defmodule CodeDuels.MixProject do
       {:uuid, "~> 1.1"},
       {:sweet_xml, "~> 0.7"},
       {:floki, ">= 0.35.0"},
-      {:html_sanitize_ex, "~> 1.5"}
+      {:html_sanitize_ex, "~> 1.5"},
+      {:vix, "~> 0.11"}
     ]
   end
 

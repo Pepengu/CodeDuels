@@ -7,6 +7,7 @@ defmodule CodeDuels.Repo.Migrations.CreateUsersTable do
       add :hashed_password, :string, null: false
       add :name, :string
       add :is_admin, :bool, null: false, default: false
+      add :avatar_path, :string
 
       timestamps(type: :utc_datetime)
     end

@@ -34,9 +34,17 @@ defmodule CodeDuelsWeb.SubmissionsLive do
                       <% is_current_user = @current_user && player_data.user_id == @current_user.id %>
                       <tr class="hover">
                         <td class={
-                          current_user_class("font-medium whitespace-nowrap", is_current_user)
+                          current_user_class(
+                            "font-medium whitespace-nowrap text-center align-middle",
+                            is_current_user
+                          )
                         }>
-                          {player_name}
+                          <.link
+                            navigate={"/profile/#{player_data.user_id}"}
+                            class="text-sm opacity-60 hover:opacity-100 transition-opacity mb-6"
+                          >
+                            {player_name}
+                          </.link>
                         </td>
                         <td class={current_user_class("text-center font-bold", is_current_user)}>
                           {player_data.score}

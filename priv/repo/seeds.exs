@@ -91,7 +91,9 @@ end
 # Helper: create submissions for a single duel's problem results.
 # `results` is a list of {problem_id, problem_letter, solved_a?, solved_b?}
 create_duel_submissions = fn round, results, user_a, user_b ->
-  languages = ["c++", "python", "rust", "go"]
+  languages =
+    Application.compile_env(:code_duels, :runner)[:adapter].languages()
+    |> Enum.map(fn {key, _display} -> to_string(key) end)
 
   make_sub = fn user, problem_id, letter, solved, lang ->
     verdict =
@@ -492,5 +494,61 @@ if existing_duels2 == 0 do
 else
   IO.puts("Tournament2 already has duels, skipping reseed")
 end
+
+# Link present avatar files to their users.
+# Files in priv/uploads/avatars follow the naming "avatars/{user_id}-{unix_ts}.webp".
+# We link each user to their most recent avatar file (idempotent).
+link_avatars = fn ->
+  avatars_dir = Path.join(Application.app_dir(:code_duels), "priv/uploads/avatars")
+
+  case File.ls(avatars_dir) do
+    {:ok, files} ->
+      files
+      |> Enum.filter(&String.ends_with?(&1, ".webp"))
+      |> Enum.map(fn filename ->
+        user_id =
+          filename
+          |> String.split("-")
+          |> List.first()
+          |> Integer.parse()
+          |> case do
+            {id, _} -> id
+            :error -> nil
+          end
+
+        {user_id, filename}
+      end)
+      |> Enum.reject(fn {user_id, _} -> is_nil(user_id) end)
+      |> Enum.group_by(fn {user_id, _} -> user_id end, fn {_, filename} -> filename end)
+      |> Enum.each(fn {user_id, filenames} ->
+        latest =
+          Enum.max_by(filenames, fn filename ->
+            ts =
+              filename
+              |> String.split("-")
+              |> List.last()
+              |> String.trim_trailing(".webp")
+
+            String.to_integer(ts)
+          end)
+
+        avatar_path = "avatars/" <> latest
+
+        case Repo.get(User, user_id) do
+          nil ->
+            IO.puts("Avatar #{latest} references unknown user #{user_id}, skipping")
+
+          user ->
+            Repo.update!(Ecto.Changeset.change(user, %{avatar_path: avatar_path}))
+            IO.puts("Linked avatar #{latest} to user #{user_id}")
+        end
+      end)
+
+    {:error, _} ->
+      IO.puts("Avatars folder does not exist yet")
+  end
+end
+
+link_avatars.()
 
 IO.puts("Seeding complete!")

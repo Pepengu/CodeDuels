@@ -6,6 +6,7 @@ defmodule CodeDuels.Accounts do
   import Ecto.Query, warn: false
   alias CodeDuels.Repo
   alias CodeDuels.Accounts.User
+  alias CodeDuels.Accounts.Avatar
 
   @doc """
   Gets a user by username.
@@ -116,4 +117,40 @@ defmodule CodeDuels.Accounts do
   end
 
   def get_user(id), do: Repo.get(User, id)
+
+  @doc """
+  Updates the user's profile fields (username, name, avatar_path).
+
+  Does not touch the password or admin flag.
+  """
+  def update_profile(user, attrs) do
+    user
+    |> User.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Stores a new avatar for the user, replacing any previous one.
+
+  Returns `{:ok, user}` on success or `{:error, reason}` / `{:error, changeset}`
+  on failure. If storing succeeds but the profile update fails, the newly
+  written file is rolled back.
+  """
+  def update_avatar(user, %Plug.Upload{} = upload) do
+    case Avatar.store(user.id, upload) do
+      {:ok, avatar_path} ->
+        case update_profile(user, %{avatar_path: avatar_path}) do
+          {:ok, updated} ->
+            if user.avatar_path, do: Avatar.delete(user.avatar_path)
+            {:ok, updated}
+
+          {:error, changeset} ->
+            Avatar.delete(avatar_path)
+            {:error, changeset}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
 end

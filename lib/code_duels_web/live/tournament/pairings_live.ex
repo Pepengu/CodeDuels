@@ -50,14 +50,34 @@ defmodule CodeDuelsWeb.PairingsLive do
                           (duel.player_a.user_id == @current_user.id ||
                              duel.player_b.user_id == @current_user.id) %>
                       <tr class="hover">
-                        <td class={current_user_class("text-blue-500", is_current_user)}>
-                          {player_name(duel.player_a)}
+                        <td class={
+                          current_user_class(
+                            " whitespace-nowrap text-center align-middle text-blue-500",
+                            is_current_user
+                          )
+                        }>
+                          <.link
+                            navigate={"/profile/#{duel.player_a.user_id}"}
+                            class="text-sm opacity-90 hover:opacity-110 transition-opacity mb-6"
+                          >
+                            {player_name(duel.player_a)}
+                          </.link>
                         </td>
                         <td class={current_user_class(nil, is_current_user)}>
                           {player_penalty(duel.scores, :A)}
                         </td>
-                        <td class={current_user_class("text-red-500", is_current_user)}>
-                          {player_name(duel.player_b)}
+                        <td class={
+                          current_user_class(
+                            " whitespace-nowrap text-center align-middle text-red-500",
+                            is_current_user
+                          )
+                        }>
+                          <.link
+                            navigate={"/profile/#{duel.player_b.user_id}"}
+                            class="text-sm opacity-90 hover:opacity-110 transition-opacity mb-6"
+                          >
+                            {player_name(duel.player_b)}
+                          </.link>
                         </td>
                         <td class={current_user_class(nil, is_current_user)}>
                           {player_penalty(duel.scores, :B)}

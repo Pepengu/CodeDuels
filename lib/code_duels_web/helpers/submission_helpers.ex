@@ -90,6 +90,66 @@ defmodule CodeDuelsWeb.Helpers.SubmissionHelpers do
     @adapter.language_highlight_class(language)
   end
 
+  def verdict_label(:accepted), do: "Принято"
+  def verdict_label(:wrong_answer), do: "Неверный ответ"
+  def verdict_label(:time_limit), do: "Превышено время"
+  def verdict_label(:memory_limit), do: "Превышена память"
+  def verdict_label(:runtime_error), do: "Ошибка выполнения"
+  def verdict_label(:compile_error), do: "Ошибка компиляции"
+  def verdict_label(:runner_error), do: "Ошибка проверки"
+  def verdict_label(:unknown_lang), do: "Неизвестный язык"
+
+  def verdict_label(other) when is_atom(other) do
+    other |> to_string() |> String.replace("_", " ")
+  end
+
+  def verdict_icon(:accepted), do: "hero-check-circle"
+  def verdict_icon(:wrong_answer), do: "hero-x-circle"
+  def verdict_icon(:time_limit), do: "hero-clock"
+  def verdict_icon(:memory_limit), do: "hero-cpu-chip"
+  def verdict_icon(:runtime_error), do: "hero-bug-ant"
+  def verdict_icon(:compile_error), do: "hero-wrench-screwdriver"
+  def verdict_icon(:runner_error), do: "hero-exclamation-triangle"
+  def verdict_icon(:unknown_lang), do: "hero-question-mark-circle"
+  def verdict_icon(_), do: "hero-information-circle"
+
+  def verdict_style(:accepted),
+    do: %{border: "border-success", text: "text-success", bar: "bg-success"}
+
+  def verdict_style(:wrong_answer),
+    do: %{border: "border-error", text: "text-error", bar: "bg-error"}
+
+  def verdict_style(:time_limit),
+    do: %{border: "border-warning", text: "text-warning", bar: "bg-warning"}
+
+  def verdict_style(:memory_limit),
+    do: %{border: "border-warning", text: "text-warning", bar: "bg-warning"}
+
+  def verdict_style(:runtime_error),
+    do: %{border: "border-error", text: "text-error", bar: "bg-error"}
+
+  def verdict_style(:compile_error),
+    do: %{border: "border-info", text: "text-info", bar: "bg-info"}
+
+  def verdict_style(:runner_error),
+    do: %{border: "border-error", text: "text-error", bar: "bg-error"}
+
+  def verdict_style(:unknown_lang),
+    do: %{border: "border-base-content", text: "text-base-content/60", bar: "bg-base-content/60"}
+
+  def verdict_style(_),
+    do: %{border: "border-base-300", text: "text-base-content", bar: "bg-base-content"}
+
+  def donut_color(:accepted), do: "stroke-success"
+  def donut_color(:wrong_answer), do: "stroke-error"
+  def donut_color(:time_limit), do: "stroke-warning"
+  def donut_color(:memory_limit), do: "stroke-warning"
+  def donut_color(:runtime_error), do: "stroke-error"
+  def donut_color(:compile_error), do: "stroke-info"
+  def donut_color(:runner_error), do: "stroke-error"
+  def donut_color(:unknown_lang), do: "stroke-base-content/60"
+  def donut_color(_), do: "stroke-base-content"
+
   def format_datetime(nil), do: "Не задано"
 
   def format_datetime(%DateTime{} = dt) do
@@ -100,4 +160,18 @@ defmodule CodeDuelsWeb.Helpers.SubmissionHelpers do
   end
 
   def format_datetime(_), do: "-"
+
+  def time_ago(%DateTime{} = dt) do
+    diff = DateTime.diff(DateTime.utc_now(), dt, :second)
+
+    cond do
+      diff < 60 -> "только что"
+      diff < 3600 -> "#{div(diff, 60)} мин. назад"
+      diff < 86400 -> "#{div(diff, 3600)} ч. назад"
+      diff < 604_800 -> "#{div(diff, 86400)} дн. назад"
+      true -> Calendar.strftime(dt, "%d.%m.%Y")
+    end
+  end
+
+  def time_ago(_), do: "-"
 end

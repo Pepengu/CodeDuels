@@ -32,6 +32,9 @@ defmodule CodeDuelsWeb.Router do
     live_session :default,
       on_mount: {CodeDuelsWeb.LiveAuth, :default} do
       live "/", HomePageLive, :index
+
+      live "/profile/:id", ProfileLive, :index
+
       live "/tournament", TournamentPageLive, :index
       live "/tournament/:id", TournamentDetailLive, :show
       live "/tournament/:id/registration", TournamentRegistrationLive, :show

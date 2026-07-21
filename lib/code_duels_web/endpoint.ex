@@ -26,6 +26,13 @@ defmodule CodeDuelsWeb.Endpoint do
     gzip: not code_reloading?,
     only: CodeDuelsWeb.static_paths()
 
+  # Serve user-uploaded files (avatars) from "priv/uploads" at "/uploads".
+  plug Plug.Static,
+    at: "/uploads",
+    from: {:code_duels, "priv/uploads"},
+    gzip: false,
+    only: ~w(avatars)
+
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do

@@ -14,6 +14,8 @@ defmodule CodeDuels.Tournaments.Verdict do
     :unknown_lang
   ]
 
+  def values, do: @values
+
   def cast(value) when value in @values, do: {:ok, value}
 
   def cast(value) when is_binary(value) do

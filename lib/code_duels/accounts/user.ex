@@ -7,6 +7,7 @@ defmodule CodeDuels.Accounts.User do
     field :name, :string
     field :hashed_password, :string
     field :is_admin, :boolean, default: false
+    field :avatar_path, :string
 
     timestamps(type: :utc_datetime)
   end
@@ -14,7 +15,7 @@ defmodule CodeDuels.Accounts.User do
   @doc false
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:username, :name, :hashed_password, :is_admin])
+    |> cast(attrs, [:username, :name, :hashed_password, :is_admin, :avatar_path])
     |> validate_required(:username)
     |> validate_length(:username, min: 3, max: 32)
     |> validate_length(:name, min: 1, max: 50)

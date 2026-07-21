@@ -41,6 +41,9 @@ npm-debug.log
 
 /priv/uploads/problems
 
+# User-uploaded avatars (local-only files, generated via the app)
+/priv/uploads/avatars
+
 # Compiled Typst output
 /priv/regulations/regulations.html
 /priv/regulations/regulations.pdf

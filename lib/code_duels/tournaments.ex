@@ -216,6 +216,16 @@ defmodule CodeDuels.Tournaments do
     )
   end
 
+  def get_user_recent_submissions(user_id, limit \\ 5) do
+    Repo.all(
+      from s in Submission,
+        where: s.user_id == ^user_id,
+        order_by: [desc: s.inserted_at, desc: s.id],
+        limit: ^limit,
+        preload: [:problem]
+    )
+  end
+
   def get_user_history(user_id) do
     Repo.all(
       from p in Participant,
@@ -227,27 +237,34 @@ defmodule CodeDuels.Tournaments do
   end
 
   @doc """
-  Aggregate submission statistics for a user based on successful (accepted) submissions.
+  Aggregate submission statistics for a user.
 
   Returns a map with:
     * `:total_submissions` - count of all submissions by the user
-    * `:accepted_submissions` - count of accepted submissions (status done + verdict accepted)
-    * `:problems_solved` - count of distinct problems solved
+    * `:verdicts` - map of verdict atom to its submission count (compile_error,
+      runner_error and unknown_lang are excluded)
+    * `:problems_solved` - count of distinct problems solved (verdict accepted)
     * `:languages` - list of `{language, accepted_count}` ordered by accepted count desc
   """
   def get_user_profile_stats(user_id) do
     total_submissions =
       Repo.one(from s in Submission, where: s.user_id == ^user_id, select: count(s.id)) || 0
 
-    accepted =
-      Repo.one(
+    keys =
+      CodeDuels.Tournaments.Verdict.values()
+      |> Enum.reject(&(&1 in [:runner_error, :unknown_lang, :compile_error]))
+
+    counts_map =
+      Repo.all(
         from s in Submission,
-          where: s.user_id == ^user_id and s.status == :done and s.verdict == :accepted,
-          select: %{
-            count: count(s.id),
-            problems: count(s.problem_id, :distinct)
-          }
+          where: s.user_id == ^user_id,
+          group_by: s.verdict,
+          select: {s.verdict, count(s.id)}
       )
+      |> Map.new()
+
+    verdicts =
+      Enum.map(keys, fn k -> {k, Map.get(counts_map, k, 0)} end) |> Map.new()
 
     languages =
       Repo.all(
@@ -258,11 +275,20 @@ defmodule CodeDuels.Tournaments do
           order_by: [desc: count(s.id)]
       )
 
+    problems_solved =
+      Repo.all(
+        from s in Submission,
+          where: s.user_id == ^user_id and s.verdict == :accepted,
+          select: s.id,
+          distinct: s.problem_id
+      )
+      |> length()
+
     %{
       total_submissions: total_submissions,
-      accepted_submissions: (accepted && accepted.count) || 0,
-      problems_solved: (accepted && accepted.problems) || 0,
-      languages: languages
+      verdicts: verdicts,
+      languages: languages,
+      problems_solved: problems_solved
     }
   end
 
@@ -356,6 +382,63 @@ defmodule CodeDuels.Tournaments do
         order_by: [asc: d.round_number],
         preload: [player_a: [:user], player_b: [:user]]
     )
+  end
+
+  def get_head_to_head_duels(viewer_id, profile_id) do
+    viewer_participants =
+      Repo.all(from p in Participant, where: p.user_id == ^viewer_id, select: p.id)
+
+    profile_participants =
+      Repo.all(from p in Participant, where: p.user_id == ^profile_id, select: p.id)
+
+    if Enum.empty?(viewer_participants) or Enum.empty?(profile_participants) do
+      %{wins: 0, draws: 0, losses: 0}
+    else
+      duels =
+        Repo.all(
+          from d in Duel,
+            where:
+              d.status == "completed" and
+                ((d.player_a_id in ^viewer_participants and
+                    d.player_b_id in ^profile_participants) or
+                   (d.player_a_id in ^profile_participants and
+                      d.player_b_id in ^viewer_participants)),
+            preload: [:tournament]
+        )
+
+      viewer_set = MapSet.new(viewer_participants)
+
+      tournament_ids = Enum.map(duels, & &1.tournament_id) |> Enum.uniq()
+
+      rounds_map =
+        Repo.all(
+          from r in Round,
+            where: r.tournament_id in ^tournament_ids,
+            select: {{r.tournament_id, r.round_number}, r.scores}
+        )
+        |> Map.new()
+
+      Enum.reduce(duels, %{wins: 0, draws: 0, losses: 0}, fn duel, acc ->
+        scores = duel.scores || []
+
+        problem_scores =
+          Map.get(rounds_map, {duel.tournament_id, duel.round_number}) || [1, 1, 2, 2, 3]
+
+        is_viewer_a = MapSet.member?(viewer_set, duel.player_a_id)
+
+        {viewer_score, _, _} =
+          Standings.calculate_player_score(scores, is_viewer_a, problem_scores)
+
+        {opponent_score, _, _} =
+          Standings.calculate_player_score(scores, not is_viewer_a, problem_scores)
+
+        cond do
+          viewer_score > opponent_score -> %{acc | wins: acc.wins + 1}
+          viewer_score == opponent_score -> %{acc | draws: acc.draws + 1}
+          true -> %{acc | losses: acc.losses + 1}
+        end
+      end)
+    end
   end
 
   def create_duel(attrs \\ %{}) do

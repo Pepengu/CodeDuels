@@ -38,8 +38,18 @@ defmodule CodeDuelsWeb.StandingsLive do
                       _ -> entry.rank
                     end}
                   </td>
-                  <td class={current_user_class("font-medium whitespace-nowrap", is_current_user)}>
-                    {entry.name}
+                  <td class={
+                    current_user_class(
+                      "font-medium whitespace-nowrap text-center align-middle",
+                      is_current_user
+                    )
+                  }>
+                    <.link
+                      navigate={"/profile/#{entry.user_id}"}
+                      class="text-sm opacity-90 hover:opacity-100 transition-opacity mb-6"
+                    >
+                      {entry.name}
+                    </.link>
                   </td>
                   <td class={current_user_class("text-center font-bold", is_current_user)}>
                     {Float.round(entry.score, 1)}

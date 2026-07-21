@@ -23,6 +23,7 @@
             tailwindcss_4
             esbuild
             typst
+            vips
           ];
 
           installPhase = ''
@@ -124,6 +125,7 @@
               tailwindcss_4
               esbuild
               typst
+              vips
 
               inotify-tools
               watchman

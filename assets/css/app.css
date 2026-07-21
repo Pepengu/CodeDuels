@@ -38,7 +38,7 @@
     --color-neutral: oklch(0.28 0.04 260);
     --color-neutral-content: oklch(0.80 0.04 265);
     --color-info: oklch(0.72 0.14 220);
-    --color-info-content: oklch(0.95 0.01 220);
+    --color-info-content: oklch(0.15 0.03 220);
     --color-success: oklch(0.45 0.12 145);
     --color-success-content: oklch(0.15 0.03 260);
     --color-warning: oklch(0.77 0.12 75);
@@ -111,3 +111,7 @@
 .border-form {border-color: var(--color-form-border)}
 .border-error {border-color: var(--color-error)}
 .border-success {border-color: var(--color-success)}
+
+/* Donut chart hover */
+.donut-wrap:has(.g-seg:hover) > .default-readout { opacity: 0; }
+.g-seg:hover foreignObject .seg-readout { display: flex; }

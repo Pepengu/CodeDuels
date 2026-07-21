@@ -15,7 +15,7 @@ defmodule CodeDuelsWeb.HomePageLive do
     {:ok, socket}
   end
 
-  def handle_event("show_popup", %{"title" => title, "message" => message}, socket) do
+  def handle_event("show_popup", %{"title" => _title, "message" => _message}, socket) do
     {:noreply, socket}
   end
 
